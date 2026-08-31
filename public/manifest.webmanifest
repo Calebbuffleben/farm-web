@@ -1,0 +1,10 @@
+{
+  "name": "Farm — inteligência comercial do agro",
+  "short_name": "Farm",
+  "start_url": "/inbox",
+  "display": "standalone",
+  "background_color": "#0f1a14",
+  "theme_color": "#0f1a14",
+  "description": "Inbox corporativo do RTV e dashboard da revenda",
+  "icons": []
+}

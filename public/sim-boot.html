@@ -1,0 +1,29 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Farm sim boot</title>
+<p>Entrando…</p>
+<script>
+(async () => {
+  const backends = ["http://127.0.0.1:8080", "http://localhost:8080"];
+  let lastErr = "fail";
+  for (const base of backends) {
+    try {
+      const res = await fetch(base + "/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: "owner@revenda-manual.test",
+          password: "OwnerPass1234"
+        })
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) { lastErr = (body.message || res.status); continue; }
+      localStorage.setItem("farm_access_token", body.accessToken);
+      localStorage.setItem("farm_refresh_token", body.refreshToken);
+      location.replace("/inbox");
+      return;
+    } catch (e) { lastErr = String(e); }
+  }
+  document.body.textContent = "Login falhou: " + lastErr;
+})();
+</script>
