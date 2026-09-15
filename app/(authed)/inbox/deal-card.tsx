@@ -20,9 +20,12 @@ import {
 export function DealCardBoard({
   conversationId,
   refreshKey,
+  hasProducerMessage = false,
 }: {
   conversationId: string;
   refreshKey: number;
+  /** Já há IN no chat — não mente que está esperando a primeira mensagem. */
+  hasProducerMessage?: boolean;
 }) {
   const [brief, setBrief] = useState<DealBrief | null>(null);
   const [analysis, setAnalysis] = useState<BriefAnalysis | null>(null);
@@ -33,23 +36,25 @@ export function DealCardBoard({
       fetchBrief(conversationId)
         .then((r) => {
           setBrief(r.brief);
-          setAnalysis(r.analysis ?? (r.brief ? 'ready' : 'waiting_producer'));
+          if (r.analysis) {
+            setAnalysis(r.analysis);
+            return;
+          }
+          setAnalysis(r.brief ? 'ready' : hasProducerMessage ? 'pending' : 'waiting_producer');
         })
-        .catch(() => {
-          setBrief((prev) => prev);
-        });
+        .catch(() => undefined);
     load();
-    const timer = setInterval(load, analysis === 'pending' ? 4_000 : 15_000);
+    const timer = setInterval(load, analysis === 'pending' || hasProducerMessage ? 4_000 : 15_000);
     return () => clearInterval(timer);
-  }, [conversationId, refreshKey, analysis]);
+  }, [conversationId, refreshKey, analysis, hasProducerMessage]);
 
-  if (analysis === null) return null;
+  if (analysis === null && !hasProducerMessage) return null;
   if (!brief) {
     const copy =
-      analysis === 'pending'
-        ? 'A IA está analisando esta conversa — o card aparece em alguns segundos.'
-        : analysis === 'blocked'
-          ? 'Análise bloqueada pelo consentimento deste produtor.'
+      analysis === 'blocked'
+        ? 'Análise bloqueada pelo consentimento deste produtor.'
+        : hasProducerMessage || analysis === 'pending'
+          ? 'Mensagem do produtor recebida. A análise ainda não gravou o Card de Bordo — o worker de inteligência precisa estar no ar com Gemini.'
           : 'Aguardando a primeira mensagem do produtor para montar o Card de Bordo.';
     return (
       <div className="border-b border-border bg-surface-2/60 px-4 py-2 text-xs text-faint">

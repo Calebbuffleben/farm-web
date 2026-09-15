@@ -461,7 +461,14 @@ function ChatPane({
       </header>
 
       {/* Card de Bordo: recarrega quando chega mensagem e em intervalo (análise é assíncrona). */}
-      <DealCardBoard conversationId={conversation.id} refreshKey={count} />
+      <DealCardBoard
+        conversationId={conversation.id}
+        refreshKey={count}
+        hasProducerMessage={
+          messages.some((m) => m.direction === 'IN') ||
+          conversation.lastMessage?.direction === 'IN'
+        }
+      />
 
       <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
         {messages.map((m) => (
