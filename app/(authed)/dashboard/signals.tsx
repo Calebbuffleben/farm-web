@@ -1,0 +1,165 @@
+'use client';
+
+import { useState } from 'react';
+import type { DashboardHome, FactCard } from '@/lib/dashboard-api';
+import { Card, cx, Empty, SectionHeader } from '@/components/ui';
+import { FactRow } from './deal-drawer';
+
+type QuestionKey = 'moneyRisk' | 'objections' | 'followups' | 'competitor' | 'rtvHelp';
+
+const QUESTIONS: { key: QuestionKey; title: string }[] = [
+  { key: 'moneyRisk', title: 'Que dinheiro está em risco?' },
+  { key: 'objections', title: 'Quais objeções crescem, por cultura e região?' },
+  { key: 'followups', title: 'Que follow-ups prometidos vencem?' },
+  { key: 'competitor', title: 'Onde o concorrente apareceu?' },
+  { key: 'rtvHelp', title: 'Qual RTV precisa de ajuda?' },
+];
+
+/** Sinais — as 5 perguntas originais, recolhíveis, alimentadas por fatos. */
+export function Signals({
+  home,
+  onOpenFact,
+}: {
+  home: DashboardHome;
+  onOpenFact: (id: string) => void;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [open, setOpen] = useState<QuestionKey | null>(null);
+
+  return (
+    <section>
+      <SectionHeader
+        title="Sinais"
+        subtitle="As 5 perguntas do gestor sobre fatos abertos — cada uma abre até a evidência."
+        right={
+          <button className="btn-ghost !py-1 text-xs" onClick={() => setCollapsed((v) => !v)}>
+            {collapsed ? 'Mostrar' : 'Recolher'}
+          </button>
+        }
+      />
+      {!collapsed && (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {QUESTIONS.map((q) => {
+              const s = summaryOf(home, q.key);
+              const active = open === q.key;
+              return (
+                <Card
+                  key={q.key}
+                  onClick={() => setOpen(active ? null : q.key)}
+                  className={cx('!p-4', active && 'border-accent/70 bg-surface-2')}
+                >
+                  <p className="text-[13px] leading-snug text-muted">{q.title}</p>
+                  <p className="mt-2 text-2xl font-semibold tabular-nums text-accent">{s.value}</p>
+                  {s.hint && <p className="mt-0.5 text-[11px] text-faint">{s.hint}</p>}
+                </Card>
+              );
+            })}
+          </div>
+          {open && (
+            <div className="mt-3">
+              <QuestionBody home={home} question={open} onOpenFact={onOpenFact} />
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+function summaryOf(home: DashboardHome, key: QuestionKey): { value: number; hint?: string } {
+  const q = home.questions;
+  if (key === 'moneyRisk') return { value: q.moneyRisk.count };
+  if (key === 'objections')
+    return {
+      value: q.objections.count,
+      hint: q.objections.growing
+        ? `${q.objections.growing} grupo(s) crescendo`
+        : 'nenhum grupo crescendo',
+    };
+  if (key === 'followups')
+    return {
+      value: q.followups.count,
+      hint: `${q.followups.overdue} atrasado${q.followups.overdue === 1 ? '' : 's'}`,
+    };
+  if (key === 'competitor') return { value: q.competitor.count };
+  return { value: q.rtvHelp.count, hint: 'RTVs com sinal aberto' };
+}
+
+function QuestionBody({
+  home,
+  question,
+  onOpenFact,
+}: {
+  home: DashboardHome;
+  question: QuestionKey;
+  onOpenFact: (id: string) => void;
+}) {
+  const empty = (
+    <Empty
+      title="Nenhum fato aberto neste recorte."
+      hint="Quando o worker analisar conversas, eles aparecem aqui — cada um clicável até a mensagem."
+    />
+  );
+  if (question === 'objections') {
+    const groups = home.questions.objections.groups;
+    if (!groups.length) return empty;
+    return (
+      <Card className="grid gap-4">
+        {groups.map((g) => (
+          <div key={`${g.crop}|${g.region}`}>
+            <p className="mb-2 text-sm font-semibold">
+              {g.crop} · {g.region}{' '}
+              <span className="font-normal text-muted">
+                {g.current} agora / {g.previous} antes
+                {g.growing ? ' · crescendo' : ''}
+              </span>
+            </p>
+            <FactList items={g.items} onOpen={onOpenFact} />
+          </div>
+        ))}
+      </Card>
+    );
+  }
+  if (question === 'rtvHelp') {
+    const items = home.questions.rtvHelp.items;
+    if (!items.length) return empty;
+    return (
+      <Card className="grid gap-4">
+        {items.map((rtv) => (
+          <div key={rtv.rtvUserId ?? rtv.rtvName}>
+            <p className="mb-2 text-sm font-semibold">
+              {rtv.rtvName}{' '}
+              <span className="font-normal text-muted">
+                score {rtv.score} · {rtv.critical} crítico · {rtv.overdue} atrasado
+              </span>
+            </p>
+            <FactList items={rtv.items} onOpen={onOpenFact} />
+          </div>
+        ))}
+      </Card>
+    );
+  }
+  const items =
+    question === 'moneyRisk'
+      ? home.questions.moneyRisk.items
+      : question === 'followups'
+        ? home.questions.followups.items
+        : home.questions.competitor.items;
+  if (!items.length) return empty;
+  return (
+    <Card>
+      <FactList items={items} onOpen={onOpenFact} />
+    </Card>
+  );
+}
+
+function FactList({ items, onOpen }: { items: FactCard[]; onOpen: (id: string) => void }) {
+  return (
+    <ul className="grid gap-2">
+      {items.map((item) => (
+        <FactRow key={item.id} fact={item} onOpen={() => onOpen(item.id)} />
+      ))}
+    </ul>
+  );
+}

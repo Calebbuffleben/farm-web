@@ -6,31 +6,54 @@ import { ApiError } from '@/lib/api';
 import {
   fetchDashboardHome,
   fetchFact,
-  patchFactStatus,
-  sendDiscountReply,
+  type AttentionItem,
+  type AttentionReason,
   type DashboardHome,
-  type FactCard,
+  type DealCard,
   type FactDetail,
   type HomeQuery,
+  type RadarRow,
 } from '@/lib/dashboard-api';
+import {
+  blockerLabel,
+  Card,
+  Chip,
+  cx,
+  DataTable,
+  Empty,
+  KIND_LABEL,
+  relativeTime,
+  SectionHeader,
+  Segmented,
+  STAGE_LABEL,
+  StageChip,
+  Stat,
+  TempBar,
+  TempDot,
+} from '@/components/ui';
+import { DealDrawer } from './deal-drawer';
+import { FactDrawer } from './fact-drawer';
+import { Signals } from './signals';
 
-const QUESTIONS: { key: QuestionKey; title: string }[] = [
-  { key: 'moneyRisk', title: 'Que dinheiro está em risco esta semana?' },
-  { key: 'objections', title: 'Quais objeções estão crescendo, por cultura e região?' },
-  { key: 'followups', title: 'Que follow-ups prometidos vencem e ninguém fez?' },
-  { key: 'competitor', title: 'Onde o concorrente apareceu?' },
-  { key: 'rtvHelp', title: 'Qual RTV precisa de ajuda?' },
-];
+const REASON_LABEL: Record<AttentionReason, string> = {
+  hot_with_pain: 'quente com objeção',
+  cooling_late_stage: 'esfriando na reta final',
+  unanswered: 'produtor sem resposta',
+  next_action_overdue: 'próximo passo vencido',
+  followup_overdue: 'follow-up atrasado',
+};
 
-type QuestionKey = 'moneyRisk' | 'objections' | 'followups' | 'competitor' | 'rtvHelp';
-
+/**
+ * Centro de Comando do gestor. Tudo aqui é leitura do que a IA já escreveu ao
+ * analisar as conversas — o RTV não preencheu nada. R$ fica fora até ERP.
+ */
 export default function DashboardPage() {
   const [query, setQuery] = useState<HomeQuery>({ days: 7 });
   const [home, setHome] = useState<DashboardHome | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [forbidden, setForbidden] = useState(false);
-  const [open, setOpen] = useState<QuestionKey | null>('moneyRisk');
-  const [detail, setDetail] = useState<FactDetail | null>(null);
+  const [dealId, setDealId] = useState<string | null>(null);
+  const [fact, setFact] = useState<FactDetail | null>(null);
 
   const refresh = useCallback(() => {
     fetchDashboardHome(query)
@@ -47,103 +70,77 @@ export default function DashboardPage() {
 
   useEffect(refresh, [refresh]);
 
+  const openFact = (id: string) => {
+    fetchFact(id).then(setFact).catch(() => undefined);
+  };
+
   if (forbidden) {
     return (
       <p className="muted">
-        O dashboard é para o gestor (OWNER, ADMIN ou MANAGER). O RTV usa o Inbox.
+        O Centro de Comando é para o gestor (OWNER, ADMIN ou MANAGER). O RTV usa o Inbox.
       </p>
     );
   }
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
-      <div className="card">
-        <h1 style={{ fontSize: 20, marginBottom: 8 }}>Dashboard do gestor</h1>
-        <p className="muted" style={{ maxWidth: 640, lineHeight: 1.6 }}>
-          Cada número abre os fatos e cada fato abre a evidência na conversa.
-          moneyHint é pista de texto, não R$ apurado.
-        </p>
+    <div className="grid gap-8">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Centro de Comando</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted">
+            Onde cada cliente está e o que fazer para vender mais — escrito pela IA a partir
+            das conversas, sem o RTV preencher nada.
+          </p>
+        </div>
         {home && (
           <Filters
             home={home}
             query={query}
             onChange={(next) => {
               setQuery(next);
-              setDetail(null);
+              setDealId(null);
+              setFact(null);
             }}
           />
         )}
-        {home && home.unknownPending > 0 && (
-          <p style={{ marginTop: 12, fontSize: 14 }}>
-            <Link href="/settings" style={{ color: 'var(--accent)' }}>
-              {home.unknownPending} trecho{home.unknownPending === 1 ? '' : 's'} na
-              fila unknown
-            </Link>
-            <span className="muted"> — vínculo humano, o LLM não chute.</span>
-          </p>
-        )}
-      </div>
+      </header>
 
       {error && <p className="error">{error}</p>}
       {!home && !error && <p className="muted">Carregando…</p>}
 
       {home && (
-        <div
-          style={{
-            display: 'grid',
-            gap: 12,
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          }}
-        >
-          {QUESTIONS.map((q, i) => {
-            const summary = summaryOf(home, q.key);
-            const active = open === q.key;
-            return (
-              <button
-                key={q.key}
-                className="card"
-                onClick={() => setOpen(active ? null : q.key)}
-                style={{
-                  padding: 18,
-                  textAlign: 'left',
-                  borderColor: active ? 'var(--accent)' : 'var(--border)',
-                }}
-              >
-                <span className="muted" style={{ fontSize: 12 }}>
-                  Pergunta {i + 1}
-                </span>
-                <p style={{ marginTop: 6, fontWeight: 600, lineHeight: 1.5 }}>{q.title}</p>
-                <p style={{ marginTop: 12, fontSize: 28, fontWeight: 700, color: 'var(--accent)' }}>
-                  {summary.value}
-                </p>
-                {summary.hint && (
-                  <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>
-                    {summary.hint}
-                  </p>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        <>
+          <Today home={home} onOpenDeal={setDealId} />
+          <Radar
+            rows={home.radar}
+            activeRtv={query.rtvUserId}
+            onPick={(id) =>
+              setQuery({ ...query, rtvUserId: query.rtvUserId === id ? undefined : id ?? undefined })
+            }
+          />
+          <PipelineSection home={home} onOpenDeal={setDealId} />
+          <Signals home={home} onOpenFact={openFact} />
+          {home.unknownPending > 0 && (
+            <p className="text-sm">
+              <Link href="/settings" className="text-accent">
+                {home.unknownPending} trecho{home.unknownPending === 1 ? '' : 's'} na fila unknown
+              </Link>
+              <span className="muted"> — vínculo humano, o LLM não chuta.</span>
+            </p>
+          )}
+        </>
       )}
 
-      {home && open && (
-        <QuestionBody
-          home={home}
-          question={open}
-          onOpenFact={(id) => {
-            fetchFact(id).then(setDetail).catch(() => undefined);
-          }}
-        />
+      {dealId && !fact && (
+        <DealDrawer conversationId={dealId} onClose={() => setDealId(null)} onOpenFact={openFact} />
       )}
-
-      {detail && (
-        <EvidenceDrawer
-          key={detail.id}
-          detail={detail}
-          onClose={() => setDetail(null)}
+      {fact && (
+        <FactDrawer
+          key={fact.id}
+          detail={fact}
+          onClose={() => setFact(null)}
           onChanged={() => {
-            setDetail(null);
+            setFact(null);
             refresh();
           }}
         />
@@ -152,27 +149,295 @@ export default function DashboardPage() {
   );
 }
 
-function summaryOf(
-  home: DashboardHome,
-  key: QuestionKey,
-): { value: number; hint?: string } {
-  const q = home.questions;
-  if (key === 'moneyRisk') return { value: q.moneyRisk.count };
-  if (key === 'objections')
-    return {
-      value: q.objections.count,
-      hint: q.objections.growing
-        ? `${q.objections.growing} grupo(s) crescendo vs. período anterior`
-        : 'nenhum grupo crescendo vs. período anterior',
-    };
-  if (key === 'followups')
-    return {
-      value: q.followups.count,
-      hint: `${q.followups.overdue} atrasado${q.followups.overdue === 1 ? '' : 's'}`,
-    };
-  if (key === 'competitor') return { value: q.competitor.count };
-  return { value: q.rtvHelp.count, hint: 'RTVs com sinal aberto' };
+// ---------------------------------------------------------------------------
+
+function Today({
+  home,
+  onOpenDeal,
+}: {
+  home: DashboardHome;
+  onOpenDeal: (conversationId: string) => void;
+}) {
+  const s = home.summary;
+  return (
+    <section>
+      <SectionHeader
+        title="Hoje"
+        subtitle={`${s.deals} negócio${s.deals === 1 ? '' : 's'} aberto${s.deals === 1 ? '' : 's'} · janela de ${home.window.days} dias para fatos`}
+      />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat label="Quentes" value={s.hot} tone="hot" hint="intenção ou urgência alta, contato ≤ 3 d" />
+        <Stat
+          label="Esfriando"
+          value={s.cooling}
+          tone="cooling"
+          hint={`${s.unanswered} produtor${s.unanswered === 1 ? '' : 'es'} sem resposta > 48 h`}
+        />
+        <Stat label="Objeções e riscos abertos" value={s.complaints} tone="danger" />
+        <Stat label="Follow-ups vencidos" value={s.overdueFollowups} tone="cooling" />
+      </div>
+
+      <div className="mt-4">
+        {home.attention.length === 0 ? (
+          <Empty
+            title="Nada pedindo atenção agora."
+            hint="Quando um negócio quente tiver objeção, esfriar em negociação ou um passo vencer, ele aparece aqui."
+          />
+        ) : (
+          <ul className="grid gap-2">
+            {home.attention.map((item) => (
+              <AttentionRow key={item.conversationId} item={item} onOpen={() => onOpenDeal(item.conversationId)} />
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
 }
+
+function AttentionRow({ item, onOpen }: { item: AttentionItem; onOpen: () => void }) {
+  return (
+    <li>
+      <Card onClick={onOpen} className="!p-3.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <TempDot temperature={item.temperature} withLabel />
+          <span className="text-sm font-semibold">
+            {item.producerName ?? item.producerPhone ?? 'Produtor'}
+          </span>
+          {item.farmNames.length > 0 && (
+            <span className="text-xs text-muted">· {item.farmNames.join(', ')}</span>
+          )}
+          <StageChip stage={item.stage} />
+          <span className="ml-auto flex flex-wrap gap-1">
+            {item.reasons.map((r) => (
+              <Chip key={r} tone={r === 'hot_with_pain' ? 'danger' : 'warning'}>
+                {REASON_LABEL[r]}
+              </Chip>
+            ))}
+          </span>
+        </div>
+        <div className="mt-2 grid gap-1 text-[13px] sm:grid-cols-2">
+          <p className="text-muted">
+            <span className="font-medium text-text">Dor:</span>{' '}
+            {item.painPoint ?? <span className="text-faint">—</span>}
+          </p>
+          <p>
+            <span className="font-medium text-accent">Próximo passo:</span> {item.nextAction}
+          </p>
+        </div>
+        <div className="mt-1.5 text-[11px] text-faint">
+          {item.rtvName ? `RTV ${item.rtvName}` : 'Sem RTV'} · último contato{' '}
+          {relativeTime(item.lastMessageAt)}
+          {item.blockerSubtype ? ` · gargalo ${blockerLabel(item.blockerSubtype)}` : ''}
+        </div>
+      </Card>
+    </li>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+function Radar({
+  rows,
+  activeRtv,
+  onPick,
+}: {
+  rows: RadarRow[];
+  activeRtv?: string;
+  onPick: (rtvUserId: string | null) => void;
+}) {
+  return (
+    <section>
+      <SectionHeader
+        title="Radar de Performance"
+        subtitle="Temperatura da carteira por RTV. Clique para cortar o painel por vendedor."
+      />
+      <DataTable
+        rows={rows}
+        rowKey={(r) => r.rtvUserId ?? '_none'}
+        activeKey={activeRtv ?? null}
+        onRowClick={(r) => onPick(r.rtvUserId)}
+        empty={
+          <Empty
+            title="Sem negócios classificados ainda."
+            hint="O radar aparece assim que o worker analisar a primeira conversa."
+          />
+        }
+        columns={[
+          {
+            key: 'rtv',
+            header: 'RTV',
+            render: (r) => (
+              <div className="font-medium">
+                {r.rtvName}
+                <div className="text-[11px] text-faint">{r.deals} negócio{r.deals === 1 ? '' : 's'}</div>
+              </div>
+            ),
+          },
+          {
+            key: 'bar',
+            header: 'Carteira',
+            className: 'min-w-[220px]',
+            render: (r) => (
+              <div>
+                <TempBar hot={r.hot} warm={r.warm} cooling={r.cooling} cold={r.cold} />
+                <div className="mt-1 flex gap-3 text-[11px] text-muted">
+                  <span className="text-hot">{r.hot} quente</span>
+                  <span className="text-warm">{r.warm} morno</span>
+                  <span className="text-cooling">{r.cooling} esfriando</span>
+                  <span className="text-cold">{r.cold} frio</span>
+                </div>
+              </div>
+            ),
+          },
+          { key: 'unanswered', header: 'Sem resposta', align: 'right', render: (r) => r.unanswered },
+          { key: 'complaints', header: 'Objeções/riscos', align: 'right', render: (r) => r.complaints },
+          { key: 'overdue', header: 'Atrasados', align: 'right', render: (r) => r.overdueFollowups },
+          {
+            key: 'score',
+            header: 'Precisa de ajuda',
+            align: 'right',
+            render: (r) => (
+              <span className={cx('font-semibold', r.score >= 6 ? 'text-danger' : r.score >= 3 ? 'text-cooling' : 'text-muted')}>
+                {r.score}
+              </span>
+            ),
+          },
+        ]}
+      />
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+function PipelineSection({
+  home,
+  onOpenDeal,
+}: {
+  home: DashboardHome;
+  onOpenDeal: (conversationId: string) => void;
+}) {
+  const stages = home.pipeline.byStage.filter((s) => s.stage !== 'SEM_NEGOCIO');
+  const noDeal = home.pipeline.byStage.find((s) => s.stage === 'SEM_NEGOCIO');
+  return (
+    <section>
+      <SectionHeader
+        title="Pipeline Invisível"
+        subtitle={`${home.pipeline.open} negócio${home.pipeline.open === 1 ? '' : 's'} em andamento, agrupados pelo que a IA leu nas conversas — sem funil preenchido.`}
+        right={
+          noDeal && noDeal.count > 0 ? (
+            <span className="text-xs text-faint">{noDeal.count} conversa{noDeal.count === 1 ? '' : 's'} sem negócio</span>
+          ) : null
+        }
+      />
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {stages.map((col) => (
+          <div key={col.stage} className="rounded-card border border-border bg-surface/60 p-2.5">
+            <div className="mb-2 flex items-center justify-between px-1">
+              <span className="text-sm font-semibold">{STAGE_LABEL[col.stage]}</span>
+              <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs tabular-nums text-muted">
+                {col.count}
+              </span>
+            </div>
+            <div className="grid gap-2">
+              {col.deals.length === 0 && (
+                <p className="px-1 py-4 text-center text-xs text-faint">—</p>
+              )}
+              {col.deals.slice(0, 12).map((d) => (
+                <DealMini key={d.conversationId} deal={d} onOpen={() => onOpenDeal(d.conversationId)} />
+              ))}
+              {col.deals.length > 12 && (
+                <p className="px-1 text-center text-[11px] text-faint">
+                  +{col.deals.length - 12} — use os filtros para reduzir
+                </p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-5">
+        <div className="mb-2 flex items-baseline gap-2">
+          <h3 className="text-sm font-semibold">Gargalos</h3>
+          <span className="text-xs text-muted">
+            o que está travando — pistas de valor em texto, R$ apurado só com ERP
+          </span>
+        </div>
+        {home.pipeline.byBlocker.length === 0 ? (
+          <Empty title="Nenhum gargalo identificado." />
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {home.pipeline.byBlocker.map((b) => (
+              <Card key={b.blockerSubtype} className="!p-4">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm font-semibold">{blockerLabel(b.blockerSubtype)}</span>
+                  <span className="text-2xl font-semibold tabular-nums text-cooling">{b.count}</span>
+                </div>
+                <p className="mt-0.5 text-xs text-muted">
+                  {b.count === 1 ? 'cliente aguardando' : 'clientes aguardando'}
+                </p>
+                {b.moneyHints.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {b.moneyHints.slice(0, 6).map((m) => (
+                      <Chip key={m} tone="neutral">{m}</Chip>
+                    ))}
+                  </div>
+                )}
+                <ul className="mt-3 grid gap-1">
+                  {b.deals.slice(0, 4).map((d) => (
+                    <li key={d.conversationId}>
+                      <button
+                        onClick={() => onOpenDeal(d.conversationId)}
+                        className="flex w-full items-center gap-2 rounded-control px-1.5 py-1 text-left text-[13px] hover:bg-surface-2"
+                      >
+                        <TempDot temperature={d.temperature} />
+                        <span className="truncate">{d.producerName ?? d.producerPhone ?? 'Produtor'}</span>
+                        <span className="ml-auto text-[11px] text-faint">{d.rtvName ?? '—'}</span>
+                      </button>
+                    </li>
+                  ))}
+                  {b.deals.length > 4 && (
+                    <li className="px-1.5 text-[11px] text-faint">+{b.deals.length - 4}</li>
+                  )}
+                </ul>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function DealMini({ deal, onOpen }: { deal: DealCard; onOpen: () => void }) {
+  return (
+    <Card onClick={onOpen} className="!p-3">
+      <div className="flex items-center gap-2">
+        <TempDot temperature={deal.temperature} />
+        <span className="truncate text-sm font-semibold">
+          {deal.producerName ?? deal.producerPhone ?? 'Produtor'}
+        </span>
+        <span className="ml-auto text-[11px] text-faint">{relativeTime(deal.lastMessageAt)}</span>
+      </div>
+      {deal.farmNames.length > 0 && (
+        <div className="mt-0.5 truncate text-[11px] text-muted">{deal.farmNames.join(', ')}</div>
+      )}
+      <p className="mt-1.5 line-clamp-2 text-xs leading-snug text-muted">{deal.contextSummary}</p>
+      <p className="mt-1.5 line-clamp-2 text-xs leading-snug">
+        <span className="font-medium text-accent">{KIND_LABEL[deal.nextActionKind] ?? 'Próximo'}:</span>{' '}
+        {deal.nextAction}
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-1">
+        {deal.blockerSubtype && <Chip tone="warning">{blockerLabel(deal.blockerSubtype)}</Chip>}
+        {deal.unanswered && <Chip tone="danger">sem resposta</Chip>}
+        <span className="ml-auto text-[11px] text-faint">{deal.rtvName ?? ''}</span>
+      </div>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
 
 function Filters({
   home,
@@ -184,25 +449,20 @@ function Filters({
   onChange: (next: HomeQuery) => void;
 }) {
   const set = (patch: Partial<HomeQuery>) => onChange({ ...query, ...patch });
+  const hasCut = Boolean(
+    query.rtvUserId || query.farmId || query.crop || query.region || query.productKey,
+  );
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 8,
-        marginTop: 16,
-      }}
-    >
-      <select
-        className="input"
-        style={{ width: 'auto' }}
+    <div className="flex flex-wrap items-center gap-2">
+      <Segmented
         value={query.days ?? 7}
-        onChange={(e) => set({ days: Number(e.target.value) })}
-      >
-        <option value={7}>7 dias</option>
-        <option value={14}>14 dias</option>
-        <option value={30}>30 dias</option>
-      </select>
+        onChange={(days) => set({ days })}
+        options={[
+          { value: 7, label: '7 d' },
+          { value: 14, label: '14 d' },
+          { value: 30, label: '30 d' },
+        ]}
+      />
       <Select
         label="RTV"
         value={query.rtvUserId ?? ''}
@@ -233,6 +493,11 @@ function Filters({
         onChange={(v) => set({ productKey: v || undefined })}
         options={home.cuts.products.map((p) => ({ value: p, label: p }))}
       />
+      {hasCut && (
+        <button className="btn-ghost !py-1.5 text-xs" onClick={() => onChange({ days: query.days })}>
+          Limpar
+        </button>
+      )}
     </div>
   );
 }
@@ -248,10 +513,10 @@ function Select({
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
 }) {
+  if (!options.length && !value) return null;
   return (
     <select
-      className="input"
-      style={{ width: 'auto', minWidth: 140 }}
+      className={cx('input !w-auto !py-1.5 text-sm', value && '!border-accent/60')}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       aria-label={label}
@@ -263,303 +528,5 @@ function Select({
         </option>
       ))}
     </select>
-  );
-}
-
-function QuestionBody({
-  home,
-  question,
-  onOpenFact,
-}: {
-  home: DashboardHome;
-  question: QuestionKey;
-  onOpenFact: (id: string) => void;
-}) {
-  if (question === 'objections') {
-    const groups = home.questions.objections.groups;
-    if (!groups.length) return <Empty />;
-    return (
-      <div className="card" style={{ display: 'grid', gap: 16 }}>
-        {groups.map((g) => (
-          <div key={`${g.crop}|${g.region}`}>
-            <p style={{ fontWeight: 600, marginBottom: 8 }}>
-              {g.crop} · {g.region}{' '}
-              <span className="muted" style={{ fontWeight: 400 }}>
-                {g.current} agora / {g.previous} antes
-                {g.growing ? ' · crescendo' : ''}
-              </span>
-            </p>
-            <FactList items={g.items} onOpen={onOpenFact} />
-          </div>
-        ))}
-      </div>
-    );
-  }
-  if (question === 'rtvHelp') {
-    const items = home.questions.rtvHelp.items;
-    if (!items.length) return <Empty />;
-    return (
-      <div className="card" style={{ display: 'grid', gap: 16 }}>
-        {items.map((rtv) => (
-          <div key={rtv.rtvUserId ?? rtv.rtvName}>
-            <p style={{ fontWeight: 600, marginBottom: 8 }}>
-              {rtv.rtvName}{' '}
-              <span className="muted" style={{ fontWeight: 400 }}>
-                score {rtv.score} · {rtv.critical} crítico · {rtv.overdue} atrasado
-              </span>
-            </p>
-            <FactList items={rtv.items} onOpen={onOpenFact} />
-          </div>
-        ))}
-      </div>
-    );
-  }
-  const items =
-    question === 'moneyRisk'
-      ? home.questions.moneyRisk.items
-      : question === 'followups'
-        ? home.questions.followups.items
-        : home.questions.competitor.items;
-  if (!items.length) return <Empty />;
-  return (
-    <div className="card">
-      <FactList items={items} onOpen={onOpenFact} />
-    </div>
-  );
-}
-
-function Empty() {
-  return (
-    <p className="muted" style={{ fontSize: 14 }}>
-      Nenhum fato aberto neste recorte. Quando o worker analisar conversas, eles
-      aparecem aqui — cada um clicável até a mensagem.
-    </p>
-  );
-}
-
-function FactList({
-  items,
-  onOpen,
-}: {
-  items: FactCard[];
-  onOpen: (id: string) => void;
-}) {
-  return (
-    <ul style={{ listStyle: 'none', display: 'grid', gap: 8 }}>
-      {items.map((item) => (
-        <li key={item.id}>
-          <button
-            onClick={() => onOpen(item.id)}
-            style={{
-              width: '100%',
-              textAlign: 'left',
-              background: 'var(--surface-2)',
-              border: '1px solid var(--border)',
-              borderRadius: 10,
-              padding: '10px 12px',
-              color: 'var(--text)',
-            }}
-          >
-            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              {item.kind} · {item.severity}
-              {item.farmName ? ` · ${item.farmName}` : ''}
-              {item.moneyHint ? ` · ${item.moneyHint}` : ''}
-            </span>
-            <p style={{ marginTop: 4, fontWeight: 600, fontSize: 14 }}>{item.headline}</p>
-            {item.evidenceSpan && (
-              <p className="muted" style={{ marginTop: 4, fontSize: 12, fontStyle: 'italic' }}>
-                “{item.evidenceSpan}”
-              </p>
-            )}
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function EvidenceDrawer({
-  detail,
-  onClose,
-  onChanged,
-}: {
-  detail: FactDetail;
-  onClose: () => void;
-  onChanged: () => void;
-}) {
-  const [busy, setBusy] = useState(false);
-  const [replyText, setReplyText] = useState('Posso 3%, não 5%.');
-  const [replyInfo, setReplyInfo] = useState<string | null>(null);
-  const [replyError, setReplyError] = useState<string | null>(null);
-  const evidenceText =
-    detail.evidence.transcript || detail.evidence.body || detail.evidenceSpan || '—';
-  const inboxHref = `/inbox?c=${encodeURIComponent(detail.evidence.conversationId)}&m=${encodeURIComponent(detail.evidence.messageId)}`;
-  const isAlcada = detail.kind === 'OBJECAO' && detail.subtype === 'preco';
-
-  async function setStatus(status: 'RESOLVED' | 'DISMISSED') {
-    setBusy(true);
-    try {
-      await patchFactStatus(detail.id, status);
-      onChanged();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function authorizeReply() {
-    const text = replyText.trim();
-    if (!text) return;
-    setBusy(true);
-    setReplyError(null);
-    setReplyInfo(null);
-    try {
-      const result = await sendDiscountReply(detail.id, text);
-      setReplyInfo(
-        result.sent
-          ? 'Resposta enviada na conversa.'
-          : 'Canal de voz: ligue pelo inbox — a alçada ficou no audit.',
-      );
-    } catch (err) {
-      setReplyError(err instanceof Error ? err.message : 'Falha ao autorizar');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="card" style={{ borderColor: 'var(--accent)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-        <div>
-          <p className="muted" style={{ fontSize: 12 }}>
-            {detail.kind} · {detail.subtype} · {detail.severity}
-          </p>
-          <h2 style={{ fontSize: 18, marginTop: 4 }}>{detail.headline}</h2>
-        </div>
-        <button
-          onClick={onClose}
-          style={{
-            background: 'transparent',
-            border: '1px solid var(--border)',
-            color: 'var(--text-muted)',
-            borderRadius: 8,
-            padding: '6px 12px',
-          }}
-        >
-          Fechar
-        </button>
-      </div>
-      <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
-        {[detail.producerName, detail.farmName, detail.crop, detail.region, detail.rtvName]
-          .filter(Boolean)
-          .join(' · ')}
-        {detail.dueAt
-          ? ` · prazo ${new Date(detail.dueAt).toLocaleString('pt-BR')}`
-          : detail.dueHintText
-            ? ` · ${detail.dueHintText}`
-            : ''}
-        {detail.moneyHint ? ` · pista ${detail.moneyHint}` : ''}
-      </p>
-      <blockquote
-        style={{
-          marginTop: 16,
-          padding: 12,
-          background: 'var(--surface-2)',
-          borderRadius: 10,
-          fontStyle: 'italic',
-          whiteSpace: 'pre-wrap',
-          fontSize: 14,
-        }}
-      >
-        {evidenceText}
-      </blockquote>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
-        <Link href={inboxHref} className="btn">
-          Ver na conversa
-        </Link>
-        <button className="btn" disabled={busy} onClick={() => void setStatus('RESOLVED')}>
-          Resolver
-        </button>
-        <button
-          disabled={busy}
-          onClick={() => void setStatus('DISMISSED')}
-          style={{
-            background: 'transparent',
-            border: '1px solid var(--border)',
-            color: 'var(--text-muted)',
-            borderRadius: 10,
-            padding: '10px 18px',
-          }}
-        >
-          Descartar
-        </button>
-      </div>
-      {isAlcada && (
-        <div
-          style={{
-            marginTop: 16,
-            paddingTop: 12,
-            borderTop: '1px solid var(--border)',
-            display: 'grid',
-            gap: 8,
-          }}
-        >
-          <label className="muted" style={{ fontSize: 12, fontWeight: 600 }}>
-            Autorizar resposta
-            {detail.channelKind === 'VOICE' ? ' · canal de voz (não envia texto)' : ''}
-          </label>
-          <textarea
-            value={replyText}
-            onChange={(e) => setReplyText(e.target.value)}
-            maxLength={500}
-            rows={2}
-            disabled={busy}
-            style={{
-              width: '100%',
-              resize: 'vertical',
-              background: 'var(--surface-2)',
-              border: '1px solid var(--border)',
-              color: 'var(--text)',
-              borderRadius: 8,
-              padding: '8px 10px',
-              font: 'inherit',
-            }}
-          />
-          <div>
-            <button className="btn" disabled={busy || !replyText.trim()} onClick={() => void authorizeReply()}>
-              Autorizar resposta
-            </button>
-          </div>
-          {replyInfo && <p style={{ fontSize: 13, color: 'var(--accent)' }}>{replyInfo}</p>}
-          {replyError && <p className="error" style={{ fontSize: 13 }}>{replyError}</p>}
-        </div>
-      )}
-      {detail.farmState && (
-        <div style={{ marginTop: 16, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-          <p style={{ fontWeight: 600, marginBottom: 6 }}>
-            Fazenda {detail.farmState.name}
-            {detail.farmState.region ? ` · ${detail.farmState.region}` : ''}
-          </p>
-          <FarmOpenFacts raw={detail.farmState.openFacts} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function FarmOpenFacts({ raw }: { raw: unknown }) {
-  if (!Array.isArray(raw) || raw.length === 0) {
-    return <p className="muted" style={{ fontSize: 13 }}>Sem fatos abertos nesta fazenda.</p>;
-  }
-  return (
-    <ul style={{ listStyle: 'none', fontSize: 13, display: 'grid', gap: 4 }}>
-      {raw.slice(0, 8).map((item, i) => {
-        const row = item as { headline?: string; kind?: string };
-        return (
-          <li key={i} className="muted">
-            {row.kind ?? 'FATO'} — {row.headline ?? JSON.stringify(item)}
-          </li>
-        );
-      })}
-    </ul>
   );
 }

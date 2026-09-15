@@ -45,6 +45,96 @@ export interface RtvHelpItem {
   items: FactCard[];
 }
 
+// --- Centro de Comando -----------------------------------------------------
+
+export type DealStage =
+  | 'SONDAGEM'
+  | 'NEGOCIACAO'
+  | 'FECHAMENTO'
+  | 'POS_VENDA'
+  | 'SEM_NEGOCIO';
+export type DealTemperature = 'HOT' | 'WARM' | 'COOLING' | 'COLD';
+export type DealLevel = 'BAIXA' | 'MEDIA' | 'ALTA';
+
+/** Um negócio (1 por conversa) como o backend devolve no pipeline/atenção. */
+export interface DealCard {
+  conversationId: string;
+  producerName: string | null;
+  producerPhone: string | null;
+  farmNames: string[];
+  rtvUserId: string | null;
+  rtvName: string | null;
+  stage: DealStage;
+  temperature: DealTemperature;
+  intent: DealLevel;
+  urgency: DealLevel;
+  contextSummary: string;
+  painPoint: string | null;
+  nextAction: string;
+  nextActionKind: string;
+  nextActionDueAt: string | null;
+  blockerSubtype: string | null;
+  products: string[];
+  /** Pistas de valor em texto — R$ só com ERP. */
+  moneyHints: string[];
+  lastMessageAt: string | null;
+  lastDirection: 'IN' | 'OUT' | null;
+  unanswered: boolean;
+  updatedAt: string;
+}
+
+export type AttentionReason =
+  | 'hot_with_pain'
+  | 'cooling_late_stage'
+  | 'unanswered'
+  | 'next_action_overdue'
+  | 'followup_overdue';
+
+export interface AttentionItem extends DealCard {
+  reasons: AttentionReason[];
+  priority: number;
+}
+
+export interface RadarRow {
+  rtvUserId: string | null;
+  rtvName: string;
+  deals: number;
+  hot: number;
+  warm: number;
+  cooling: number;
+  cold: number;
+  complaints: number;
+  overdueFollowups: number;
+  unanswered: number;
+  score: number;
+}
+
+export interface Pipeline {
+  open: number;
+  byStage: { stage: DealStage; count: number; deals: DealCard[] }[];
+  byBlocker: {
+    blockerSubtype: string;
+    count: number;
+    deals: DealCard[];
+    moneyHints: string[];
+  }[];
+}
+
+export interface CommandSummary {
+  deals: number;
+  hot: number;
+  cooling: number;
+  unanswered: number;
+  complaints: number;
+  overdueFollowups: number;
+}
+
+export interface DealDetail extends DealCard {
+  stageConfidence: number;
+  evidenceMessageId: string;
+  facts: FactCard[];
+}
+
 export interface DashboardHome {
   window: {
     from: string;
@@ -54,6 +144,10 @@ export interface DashboardHome {
     days: number;
   };
   unknownPending: number;
+  summary: CommandSummary;
+  attention: AttentionItem[];
+  radar: RadarRow[];
+  pipeline: Pipeline;
   cuts: {
     rtvs: { id: string; name: string }[];
     farms: { id: string; name: string }[];
@@ -113,6 +207,9 @@ export function fetchDashboardHome(query: HomeQuery = {}) {
 }
 
 export const fetchFact = (id: string) => api<FactDetail>(`/dashboard/facts/${id}`);
+
+export const fetchDeal = (conversationId: string) =>
+  api<DealDetail>(`/dashboard/deals/${encodeURIComponent(conversationId)}`);
 
 export const patchFactStatus = (id: string, status: 'OPEN' | 'RESOLVED' | 'DISMISSED') =>
   api<{ id: string; status: string }>(`/dashboard/facts/${id}`, {

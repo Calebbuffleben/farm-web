@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { clearTokens, fetchMe, getAccessToken, logout, type Me } from '@/lib/api';
+import { cx } from '@/components/ui';
 
 const NAV = [
   { href: '/inbox', label: 'Inbox' },
-  { href: '/dashboard', label: 'Dashboard' },
+  { href: '/dashboard', label: 'Centro de Comando' },
   { href: '/settings', label: 'Configurações' },
 ];
 
@@ -38,76 +39,52 @@ export default function AuthedLayout({ children }: { children: React.ReactNode }
 
   if (checking) {
     return (
-      <main
-        style={{
-          minHeight: '100dvh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
+      <main className="flex min-h-dvh items-center justify-center">
         <p className="muted">Carregando…</p>
       </main>
     );
   }
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      <header
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 24,
-          padding: '12px 20px',
-          borderBottom: '1px solid var(--border)',
-          background: 'var(--surface)',
-        }}
-      >
-        <span style={{ fontWeight: 700 }}>Farm</span>
-        <nav style={{ display: 'flex', gap: 4 }}>
-          {NAV.map((item) => {
-            const active = pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 8,
-                  fontSize: 14,
-                  background: active ? 'var(--surface-2)' : 'transparent',
-                  color: active ? 'var(--text)' : 'var(--text-muted)',
-                }}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-          {me && (
-            <span className="muted" style={{ fontSize: 13 }}>
-              {me.user.email} · {me.tenant.name}
+    <div className="flex min-h-dvh flex-col">
+      <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-[1280px] items-center gap-5 px-5 py-2.5">
+          <Link href="/inbox" className="flex items-center gap-2">
+            <span className="grid size-7 place-items-center rounded-lg bg-accent text-sm font-bold text-accent-ink">
+              F
             </span>
-          )}
-          <button
-            onClick={onLogout}
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--border)',
-              color: 'var(--text-muted)',
-              borderRadius: 8,
-              padding: '6px 12px',
-              fontSize: 13,
-            }}
-          >
-            Sair
-          </button>
+            <span className="text-sm font-semibold tracking-tight">Farm</span>
+          </Link>
+          <nav className="flex items-center gap-1 rounded-full border border-border bg-surface-2 p-0.5">
+            {NAV.map((item) => {
+              const active = pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cx(
+                    'rounded-full px-3 py-1 text-[13px] font-medium transition',
+                    active ? 'bg-accent text-accent-ink' : 'text-muted hover:text-text',
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="ml-auto flex items-center gap-3">
+            {me && (
+              <span className="hidden text-[13px] text-muted sm:inline">
+                <span className="text-text">{me.tenant.name}</span> · {me.user.email}
+              </span>
+            )}
+            <button onClick={onLogout} className="btn-ghost !px-3 !py-1 text-[13px]">
+              Sair
+            </button>
+          </div>
         </div>
       </header>
-      <main style={{ flex: 1, padding: 20, maxWidth: 1100, width: '100%', margin: '0 auto' }}>
-        {children}
-      </main>
+      <main className="mx-auto w-full max-w-[1280px] flex-1 px-5 py-5">{children}</main>
     </div>
   );
 }

@@ -20,6 +20,8 @@ import {
 } from '@/lib/wa-session-api';
 import { useAudioRecorder } from '@/lib/use-audio-recorder';
 import { useTwilioDevice } from '@/lib/use-twilio-device';
+import { cx, KIND_LABEL, StageChip, TempDot } from '@/components/ui';
+import { DealCardBoard } from './deal-card';
 
 const POLL_MS = 5000;
 const ADMIN_ROLES = new Set(['OWNER', 'ADMIN', 'MANAGER']);
@@ -52,7 +54,8 @@ export default function InboxPage() {
 
   const isAdmin = me ? ADMIN_ROLES.has(me.membership.role) : false;
   const sessionDropped = session?.status === 'DISABLED' && Boolean(session.connectedAt);
-  const neverConnected = session?.status === 'NEVER' || (session?.status === 'DISABLED' && !session.connectedAt);
+  const neverConnected =
+    session?.status === 'NEVER' || (session?.status === 'DISABLED' && !session.connectedAt);
 
   const refresh = useCallback(() => {
     listConversations()
@@ -76,156 +79,160 @@ export default function InboxPage() {
 
   return (
     <>
-    {sessionDropped && (
-      <Banner tone="error">
-        Seu WhatsApp desconectou — nada chega ao Inbox e nenhum relatório sai até reconectar.{' '}
-        <Link href="/settings" style={{ color: 'inherit', textDecoration: 'underline' }}>
-          Reconectar
-        </Link>
-      </Banner>
-    )}
-    {!sessionDropped && neverConnected && !isAdmin && me && (
-      <Banner tone="info">
-        Conecte seu WhatsApp para as conversas com produtores aparecerem aqui.{' '}
-        <Link href="/settings" style={{ color: 'inherit', textDecoration: 'underline' }}>
-          Conectar agora
-        </Link>{' '}
-        · leva 1 minuto, direto do celular.
-      </Banner>
-    )}
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: selected ? 'minmax(260px, 340px) 1fr' : '1fr',
-        gap: 16,
-        height: 'calc(100dvh - 110px)',
-      }}
-    >
+      {sessionDropped && (
+        <Banner tone="error">
+          Seu WhatsApp desconectou — nada chega ao Inbox e nenhum relatório sai até reconectar.{' '}
+          <Link href="/settings" className="underline">
+            Reconectar
+          </Link>
+        </Banner>
+      )}
+      {!sessionDropped && neverConnected && !isAdmin && me && (
+        <Banner tone="info">
+          Conecte seu WhatsApp para as conversas com produtores aparecerem aqui.{' '}
+          <Link href="/settings" className="underline">
+            Conectar agora
+          </Link>{' '}
+          · leva 1 minuto, direto do celular.
+        </Banner>
+      )}
       <div
-        className="card"
-        style={{
-          padding: 0,
-          overflowY: 'auto',
-          display: selected ? undefined : 'block',
-        }}
+        className={cx(
+          'grid gap-4',
+          selected ? 'grid-cols-1 md:grid-cols-[minmax(280px,360px)_1fr]' : 'grid-cols-1',
+        )}
+        style={{ height: 'calc(100dvh - 104px)' }}
       >
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
-          <strong>Conversas</strong>
-        </div>
-        {!loaded && <p className="muted" style={{ padding: 16 }}>Carregando…</p>}
-        {loaded && listError && (
-          <p className="error" style={{ padding: 16, fontSize: 14 }}>{listError}</p>
-        )}
-        {loaded && !listError && conversations.length === 0 && (
-          <div className="muted" style={{ padding: 16, fontSize: 14 }}>
-            {session?.status === 'ACTIVE' ? (
-              <>
-                <p>WhatsApp conectado. Nenhuma conversa ainda.</p>
-                <p style={{ marginTop: 8 }}>
-                  Teste agora: peça a um produtor que mande um &quot;oi&quot; para o seu número —
-                  ou mande você, pelo celular. A conversa aparece aqui em segundos.
-                </p>
-              </>
-            ) : (
-              <>
-                <p>Nenhuma conversa ainda.</p>
-                {!isAdmin && (
-                  <p style={{ marginTop: 8 }}>
-                    <Link href="/settings" className="btn" style={{ display: 'inline-block' }}>
-                      Conectar meu WhatsApp
-                    </Link>
-                  </p>
-                )}
-                <p style={{ marginTop: 8 }}>
-                  Sem conexão? Em Configurações você também pode{' '}
-                  <Link href="/settings" style={{ color: 'var(--accent)' }}>
-                    importar um export .txt
-                  </Link>{' '}
-                  de uma conversa.
-                </p>
-              </>
-            )}
+        <aside
+          className={cx(
+            'card flex flex-col overflow-hidden !p-0',
+            selected && 'hidden md:flex',
+          )}
+        >
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <strong className="text-sm">Conversas</strong>
+            <span className="text-[11px] text-faint">{conversations.length}</span>
           </div>
-        )}
-        {conversations.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => setSelectedId(c.id)}
-            style={{
-              display: 'block',
-              width: '100%',
-              textAlign: 'left',
-              padding: '12px 16px',
-              background: c.id === selectedId ? 'var(--surface-2)' : 'transparent',
-              border: 'none',
-              borderBottom: '1px solid var(--border)',
-              color: 'var(--text)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-              <strong style={{ fontSize: 14 }}>
-                {c.producer?.name ?? c.producerPhone}
-              </strong>
-              <span
-                className="muted"
-                style={{
-                  fontSize: 12,
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <ChannelBadge kind={c.channelKind} />
-                {c.lastMessageAt ? formatTime(c.lastMessageAt) : ''}
-              </span>
-            </div>
-            <div
-              className="muted"
-              style={{
-                fontSize: 13,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                marginTop: 2,
-              }}
-            >
-              {previewOf(c)}
-            </div>
-          </button>
-        ))}
-      </div>
+          <div className="flex-1 overflow-y-auto">
+            {!loaded && <p className="muted p-4 text-sm">Carregando…</p>}
+            {loaded && listError && <p className="error p-4 text-sm">{listError}</p>}
+            {loaded && !listError && conversations.length === 0 && (
+              <EmptyList sessionActive={session?.status === 'ACTIVE'} isAdmin={isAdmin} />
+            )}
+            {conversations.map((c) => (
+              <ConversationRow
+                key={c.id}
+                conversation={c}
+                active={c.id === selectedId}
+                onSelect={() => setSelectedId(c.id)}
+              />
+            ))}
+          </div>
+        </aside>
 
-      {selected && (
-        <ChatPane
-          key={selected.id}
-          conversation={selected}
-          highlightMessageId={highlightId}
-          isAdmin={isAdmin}
-          onClose={() => {
-            setSelectedId(null);
-            setHighlightId(null);
-          }}
-          onChanged={refresh}
-        />
+        {selected && (
+          <ChatPane
+            key={selected.id}
+            conversation={selected}
+            highlightMessageId={highlightId}
+            isAdmin={isAdmin}
+            onClose={() => {
+              setSelectedId(null);
+              setHighlightId(null);
+            }}
+            onChanged={refresh}
+          />
+        )}
+      </div>
+    </>
+  );
+}
+
+function EmptyList({ sessionActive, isAdmin }: { sessionActive: boolean; isAdmin: boolean }) {
+  return (
+    <div className="muted grid gap-2 p-4 text-sm">
+      {sessionActive ? (
+        <>
+          <p>WhatsApp conectado. Nenhuma conversa ainda.</p>
+          <p>
+            Teste agora: peça a um produtor que mande um &quot;oi&quot; para o seu número — ou
+            mande você, pelo celular. A conversa aparece aqui em segundos.
+          </p>
+        </>
+      ) : (
+        <>
+          <p>Nenhuma conversa ainda.</p>
+          {!isAdmin && (
+            <p>
+              <Link href="/settings" className="btn inline-block">
+                Conectar meu WhatsApp
+              </Link>
+            </p>
+          )}
+          <p>
+            Sem conexão? Em Configurações você também pode{' '}
+            <Link href="/settings" className="text-accent">
+              importar um export .txt
+            </Link>{' '}
+            de uma conversa.
+          </p>
+        </>
       )}
     </div>
-    </>
+  );
+}
+
+function ConversationRow({
+  conversation: c,
+  active,
+  onSelect,
+}: {
+  conversation: ConversationSummary;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  const brief = c.brief ?? null;
+  return (
+    <button
+      onClick={onSelect}
+      className={cx(
+        'block w-full border-b border-border px-4 py-3 text-left transition hover:bg-surface-2/70',
+        active && 'bg-surface-2',
+      )}
+    >
+      <div className="flex items-center gap-2">
+        {brief ? (
+          <TempDot temperature={brief.temperature} />
+        ) : (
+          <span className="inline-block size-2 rounded-full bg-surface-3" />
+        )}
+        <strong className="truncate text-sm">{c.producer?.name ?? c.producerPhone}</strong>
+        <span className="ml-auto flex items-center gap-2 whitespace-nowrap text-xs text-muted">
+          <ChannelBadge kind={c.channelKind} />
+          {c.lastMessageAt ? formatTime(c.lastMessageAt) : ''}
+        </span>
+      </div>
+      <div className="mt-0.5 truncate pl-4 text-[13px] text-muted">{previewOf(c)}</div>
+      {brief && brief.stage !== 'SEM_NEGOCIO' && (
+        <div className="mt-1.5 flex items-center gap-1.5 pl-4">
+          <StageChip stage={brief.stage} />
+          <span className="truncate text-[11px] text-faint">
+            <span className="text-accent">{KIND_LABEL[brief.nextActionKind] ?? 'Próximo'}:</span>{' '}
+            {brief.nextAction}
+          </span>
+        </div>
+      )}
+    </button>
   );
 }
 
 function Banner({ tone, children }: { tone: 'error' | 'info'; children: React.ReactNode }) {
   return (
     <div
-      className={tone === 'error' ? 'error' : undefined}
-      style={{
-        fontSize: 14,
-        padding: '10px 14px',
-        marginBottom: 12,
-        borderRadius: 10,
-        border: '1px solid var(--border)',
-        background: 'var(--surface)',
-      }}
+      className={cx(
+        'mb-3 rounded-control border px-3.5 py-2.5 text-sm',
+        tone === 'error' ? 'border-danger/40 bg-danger/10 text-danger' : 'border-border bg-surface',
+      )}
     >
       {children}
     </div>
@@ -261,12 +268,11 @@ function ReportButton({ conversationId }: { conversationId: string }) {
 
   if (!elig) return null;
   return (
-    <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+    <span className="ml-auto flex items-center gap-2 text-xs">
       {note && <span className="muted">{note}</span>}
       {!elig.eligible && <span className="muted">Relatório: {elig.reason}</span>}
       <button
-        className="btn"
-        style={{ padding: '6px 12px', fontSize: 13 }}
+        className="btn !px-3 !py-1.5 text-[13px]"
         disabled={!elig.eligible || busy}
         onClick={() => void onSend()}
         title={elig.reason ?? 'Resumo com os fatos abertos + opção de parar'}
@@ -294,9 +300,7 @@ function formatTime(iso: string): string {
     : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 }
 
-function channelBadgeLabel(
-  kind: ConversationSummary['channelKind'] | undefined,
-): string {
+function channelBadgeLabel(kind: ConversationSummary['channelKind'] | undefined): string {
   if (kind === 'VOICE') return 'VOZ';
   if (kind === 'EMAIL') return 'E-MAIL';
   if (kind === 'WA_SESSION') return 'WHATSAPP';
@@ -305,17 +309,7 @@ function channelBadgeLabel(
 
 function ChannelBadge({ kind }: { kind: ConversationSummary['channelKind'] | undefined }) {
   return (
-    <span
-      style={{
-        fontSize: 10,
-        fontWeight: 700,
-        letterSpacing: 0.4,
-        border: '1px solid var(--border)',
-        borderRadius: 6,
-        padding: '1px 6px',
-        color: 'var(--text-muted)',
-      }}
-    >
+    <span className="rounded-md border border-border px-1.5 py-px text-[10px] font-bold tracking-wide text-muted">
       {channelBadgeLabel(kind)}
     </span>
   );
@@ -356,9 +350,7 @@ function ChatPane({
         setSendError(null);
       })
       .catch((err) => {
-        setSendError(
-          err instanceof Error ? err.message : 'Não deu para carregar as mensagens',
-        );
+        setSendError(err instanceof Error ? err.message : 'Não deu para carregar as mensagens');
       });
   }, [conversation.id]);
 
@@ -371,9 +363,7 @@ function ChatPane({
   const count = messages.length;
   useEffect(() => {
     if (highlightMessageId) {
-      document.getElementById(`msg-${highlightMessageId}`)?.scrollIntoView({
-        block: 'center',
-      });
+      document.getElementById(`msg-${highlightMessageId}`)?.scrollIntoView({ block: 'center' });
       return;
     }
     bottomRef.current?.scrollIntoView({ behavior: 'auto' });
@@ -447,71 +437,53 @@ function ChatPane({
   }
 
   return (
-    <div className="card" style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          padding: '12px 16px',
-          borderBottom: '1px solid var(--border)',
-        }}
-      >
+    <section className="card flex min-h-0 flex-col overflow-hidden !p-0">
+      <header className="flex items-center gap-3 border-b border-border px-4 py-3">
         <button
           onClick={onClose}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: 'var(--text-muted)',
-            fontSize: 18,
-          }}
+          className="text-lg text-muted hover:text-text"
           aria-label="Fechar conversa"
         >
           ←
         </button>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <strong>{conversation.producer?.name ?? conversation.producerPhone}</strong>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <strong className="truncate text-sm">
+              {conversation.producer?.name ?? conversation.producerPhone}
+            </strong>
             <ChannelBadge kind={conversation.channelKind} />
           </div>
-          <div className="muted" style={{ fontSize: 12 }}>
+          <div className="truncate text-xs text-muted">
             {conversation.producerPhone} · via {conversation.wabaNumber.displayNumber}
           </div>
         </div>
         {isWaSession && isAdmin && <ReportButton conversationId={conversation.id} />}
-      </div>
+      </header>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Card de Bordo: recarrega quando chega mensagem e em intervalo (análise é assíncrona). */}
+      <DealCardBoard conversationId={conversation.id} refreshKey={count} />
+
+      <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
         {messages.map((m) => (
-          <MessageBubble
-            key={m.id}
-            message={m}
-            highlight={m.id === highlightMessageId}
-          />
+          <MessageBubble key={m.id} message={m} highlight={m.id === highlightMessageId} />
         ))}
         <div ref={bottomRef} />
       </div>
 
-      <div style={{ padding: 12, borderTop: '1px solid var(--border)' }}>
-        {sendError && (
-          <p className="error" style={{ marginBottom: 8, fontSize: 13 }}>{sendError}</p>
-        )}
+      <footer className="border-t border-border p-3">
+        {sendError && <p className="error mb-2 text-[13px]">{sendError}</p>}
         {isVoice ? (
           <div>
-            <p className="muted" style={{ fontSize: 13, marginBottom: 8 }}>
-              A transcrição entra quando a Twilio envia a gravação. Não há
-              texto neste canal.
+            <p className="muted mb-2 text-[13px]">
+              A transcrição entra quando a Twilio envia a gravação. Não há texto neste canal.
             </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div className="flex flex-wrap gap-2">
               <button className="btn" onClick={onCall} disabled={calling}>
                 {calling ? 'Ligando…' : 'Ligar'}
               </button>
               <button
-                className="btn"
+                className={foneOn ? 'btn-ghost' : 'btn'}
                 onClick={() => setFoneOn((on) => !on)}
-                style={{
-                  background: foneOn ? 'var(--surface-2)' : undefined,
-                }}
               >
                 {foneOn ? 'Desativar fone' : 'Atender no navegador'}
               </button>
@@ -532,127 +504,108 @@ function ChatPane({
               )}
             </div>
             {foneOn && (
-              <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-                {fone.status === 'ready' && 'Fone pronto — toques também no navegador. Atenda aqui ou no celular.'}
+              <p className="muted mt-2 text-xs">
+                {fone.status === 'ready' &&
+                  'Fone pronto — toques também no navegador. Atenda aqui ou no celular.'}
                 {fone.status === 'ringing' && 'Ligação no navegador — Atender ou Encerrar.'}
                 {fone.status === 'open' && 'Em chamada.'}
                 {fone.status === 'idle' && 'Ativando fone…'}
               </p>
             )}
-            {fone.error && (
-              <p className="error" style={{ fontSize: 13, marginTop: 8 }}>{fone.error}</p>
-            )}
+            {fone.error && <p className="error mt-2 text-[13px]">{fone.error}</p>}
           </div>
         ) : (
           <>
-        {recorder.error && (
-          <p className="error" style={{ marginBottom: 8, fontSize: 13 }}>{recorder.error}</p>
-        )}
-        {recorder.recording ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ color: 'var(--danger)', fontSize: 14 }}>
-              ● Gravando {Math.floor(recorder.elapsedMs / 1000)}s
-            </span>
-            <button className="btn" onClick={onStopRecording} disabled={sending}>
-              Enviar
-            </button>
-            <button
-              onClick={recorder.cancel}
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--border)',
-                color: 'var(--text-muted)',
-                borderRadius: 10,
-                padding: '10px 18px',
-              }}
-            >
-              Cancelar
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {needsSubject && (
-              <input
-                className="input"
-                placeholder="Assunto"
-                value={subjectDraft}
-                onChange={(e) => setSubjectDraft(e.target.value)}
-                disabled={sending}
-              />
-            )}
-            <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              className="input"
-              placeholder="Mensagem…"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  void onSendText();
-                }
-              }}
-              disabled={sending}
-            />
-            {draft.trim() || isEmail || isWaSession ? (
-              <button
-                className="btn"
-                onClick={onSendText}
-                disabled={sending || !draft.trim() || (needsSubject && !subjectDraft.trim())}
-              >
-                Enviar
-              </button>
+            {recorder.error && <p className="error mb-2 text-[13px]">{recorder.error}</p>}
+            {recorder.recording ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-danger">
+                  ● Gravando {Math.floor(recorder.elapsedMs / 1000)}s
+                </span>
+                <button className="btn" onClick={onStopRecording} disabled={sending}>
+                  Enviar
+                </button>
+                <button className="btn-ghost" onClick={recorder.cancel}>
+                  Cancelar
+                </button>
+              </div>
             ) : (
-              <button
-                className="btn"
-                onClick={recorder.start}
-                disabled={sending}
-                aria-label="Gravar áudio"
-              >
-                🎙
-              </button>
+              <div className="flex flex-col gap-2">
+                {needsSubject && (
+                  <input
+                    className="input"
+                    placeholder="Assunto"
+                    value={subjectDraft}
+                    onChange={(e) => setSubjectDraft(e.target.value)}
+                    disabled={sending}
+                  />
+                )}
+                <div className="flex gap-2">
+                  <input
+                    className="input"
+                    placeholder="Mensagem…"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        void onSendText();
+                      }
+                    }}
+                    disabled={sending}
+                  />
+                  {draft.trim() || isEmail || isWaSession ? (
+                    <button
+                      className="btn"
+                      onClick={onSendText}
+                      disabled={
+                        sending || !draft.trim() || (needsSubject && !subjectDraft.trim())
+                      }
+                    >
+                      Enviar
+                    </button>
+                  ) : (
+                    <button
+                      className="btn"
+                      onClick={recorder.start}
+                      disabled={sending}
+                      aria-label="Gravar áudio"
+                    >
+                      🎙
+                    </button>
+                  )}
+                </div>
+              </div>
             )}
-            </div>
-          </div>
-        )}
           </>
         )}
-      </div>
-    </div>
+      </footer>
+    </section>
   );
 }
 
-function MessageBubble({
-  message,
-  highlight,
-}: {
-  message: InboxMessage;
-  highlight?: boolean;
-}) {
+function MessageBubble({ message, highlight }: { message: InboxMessage; highlight?: boolean }) {
   const mine = message.direction === 'OUT';
   return (
     <div
       id={`msg-${message.id}`}
-      style={{
-        alignSelf: mine ? 'flex-end' : 'flex-start',
-        maxWidth: '75%',
-        background: mine ? 'var(--surface-2)' : 'var(--surface)',
-        border: highlight ? '2px solid var(--accent)' : '1px solid var(--border)',
-        borderRadius: 12,
-        padding: '8px 12px',
-      }}
-    >
-      {message.type === 'TEXT' && (
-        <p style={{ fontSize: 14, whiteSpace: 'pre-wrap' }}>{message.body}</p>
+      className={cx(
+        'max-w-[78%] rounded-2xl border px-3 py-2',
+        mine
+          ? 'self-end rounded-br-md border-accent/25 bg-accent/10'
+          : 'self-start rounded-bl-md border-border bg-surface-2',
+        highlight && 'ring-2 ring-accent',
       )}
+    >
+      {message.type === 'TEXT' && <p className="whitespace-pre-wrap text-sm">{message.body}</p>}
       {message.type === 'AUDIO' && <AudioMessage message={message} />}
       {message.type !== 'TEXT' && message.type !== 'AUDIO' && (
-        <p className="muted" style={{ fontSize: 13 }}>
+        <p className="muted text-[13px]">
           [{message.type.toLowerCase()}]
           {message.mediaStatus === 'PENDING_MEDIA' && ' — baixando…'}
         </p>
       )}
-      <span className="muted" style={{ fontSize: 11, display: 'block', textAlign: 'right', marginTop: 4 }}>
+      <span className="mt-1 block text-right text-[11px] text-faint">
         {new Date(message.sentAt).toLocaleTimeString('pt-BR', {
           hour: '2-digit',
           minute: '2-digit',
@@ -684,49 +637,32 @@ function AudioMessage({ message }: { message: InboxMessage }) {
   return (
     <div>
       {message.mediaStatus === 'PENDING_MEDIA' && (
-        <p className="muted" style={{ fontSize: 13 }}>🎙 áudio — baixando…</p>
+        <p className="muted text-[13px]">🎙 áudio — baixando…</p>
       )}
       {message.mediaStatus === 'FAILED' && (
-        <p className="error" style={{ fontSize: 13 }}>🎙 falha ao baixar o áudio</p>
+        <p className="error text-[13px]">🎙 falha ao baixar o áudio</p>
       )}
-      {url && <audio controls src={url} style={{ maxWidth: '100%' }} />}
-      {failed && <p className="error" style={{ fontSize: 13 }}>Falha ao carregar áudio</p>}
+      {url && <audio controls src={url} className="max-w-full" />}
+      {failed && <p className="error text-[13px]">Falha ao carregar áudio</p>}
       {message.transcript && (
-        <p className="muted" style={{ fontSize: 13, marginTop: 6, fontStyle: 'italic' }}>
-          “{message.transcript}”
-        </p>
+        <p className="muted mt-1.5 text-[13px] italic">“{message.transcript}”</p>
       )}
       {message.coachNote && (
-        <div
-          style={{
-            marginTop: 8,
-            padding: '8px 10px',
-            border: '1px solid var(--border)',
-            borderRadius: 8,
-            background: 'var(--surface-2)',
-            fontSize: 13,
-          }}
-        >
+        <div className="mt-2 rounded-control border border-border bg-surface px-2.5 py-2 text-[13px]">
           <span
-            className="muted"
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: 0.04,
-              color:
-                message.coachTone === 'alerta'
-                  ? 'var(--danger)'
-                  : message.coachTone === 'oportunidade'
-                    ? 'var(--accent)'
-                    : undefined,
-            }}
+            className={cx(
+              'text-[10px] font-bold tracking-wide',
+              message.coachTone === 'alerta'
+                ? 'text-danger'
+                : message.coachTone === 'oportunidade'
+                  ? 'text-accent'
+                  : 'text-muted',
+            )}
           >
             COPILOT
-            {message.coachTone && message.coachTone !== 'neutro'
-              ? ` · ${message.coachTone}`
-              : ''}
+            {message.coachTone && message.coachTone !== 'neutro' ? ` · ${message.coachTone}` : ''}
           </span>
-          <p style={{ marginTop: 4 }}>{message.coachNote}</p>
+          <p className="mt-1">{message.coachNote}</p>
         </div>
       )}
     </div>

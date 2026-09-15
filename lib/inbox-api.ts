@@ -1,6 +1,31 @@
 import { api, apiUpload } from './api';
+import type { DealLevel, DealStage, DealTemperature } from './dashboard-api';
+
+/** Resumo do brief que vem junto na lista de conversas. */
+export interface DealBriefSummary {
+  stage: DealStage;
+  temperature: DealTemperature;
+  nextAction: string;
+  nextActionKind: string;
+  updatedAt: string;
+}
+
+/** Card de Bordo completo (GET /inbox/conversations/:id/brief). */
+export interface DealBrief extends DealBriefSummary {
+  stageConfidence: number;
+  contextSummary: string;
+  intent: DealLevel;
+  urgency: DealLevel;
+  painPoint: string | null;
+  nextActionDueAt: string | null;
+  blockerSubtype: string | null;
+  products: string[];
+  evidenceMessageId: string;
+}
 
 export interface ConversationSummary {
+  /** null = a IA ainda não analisou esta conversa. */
+  brief?: DealBriefSummary | null;
   id: string;
   producerPhone: string;
   producer: { id: string; name: string } | null;
@@ -35,6 +60,11 @@ export interface InboxMessage {
 
 export const listConversations = () =>
   api<ConversationSummary[]>('/inbox/conversations');
+
+export const fetchBrief = (conversationId: string) =>
+  api<{ brief: DealBrief | null }>(`/inbox/conversations/${conversationId}/brief`).then(
+    (r) => r.brief,
+  );
 
 export const listMessages = (conversationId: string) =>
   api<InboxMessage[]>(`/inbox/conversations/${conversationId}/messages`);

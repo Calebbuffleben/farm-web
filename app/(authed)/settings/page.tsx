@@ -44,6 +44,7 @@ import { fetchMe, type Me } from '@/lib/api';
 import { WhatsappImportSection } from './whatsapp-import-section';
 import { MyWhatsappSection } from './my-whatsapp-section';
 import { TeamWhatsappSection } from './team-whatsapp-section';
+import { SalesPolicySection } from './sales-policy-section';
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, '') ?? 'http://localhost:8080';
@@ -118,6 +119,7 @@ export default function SettingsPage() {
       ) : (
         <>
           <TeamSection members={members} onChanged={refresh} />
+          <SalesPolicySection />
           <TeamWhatsappSection />
           <MyWhatsappSection />
           <WabaSection accounts={accounts} members={members} onChanged={refresh} />
