@@ -40,6 +40,10 @@ import {
   type VoiceAccountInfo,
   type EmailAccountInfo,
 } from '@/lib/inbox-api';
+import { fetchMe, type Me } from '@/lib/api';
+import { WhatsappImportSection } from './whatsapp-import-section';
+import { MyWhatsappSection } from './my-whatsapp-section';
+import { TeamWhatsappSection } from './team-whatsapp-section';
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, '') ?? 'http://localhost:8080';
@@ -66,6 +70,11 @@ export default function SettingsPage() {
   const [emailAccounts, setEmailAccounts] = useState<EmailAccountInfo[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [forbidden, setForbidden] = useState(false);
+  const [me, setMe] = useState<Me | null>(null);
+
+  useEffect(() => {
+    fetchMe().then(setMe).catch(() => undefined);
+  }, []);
 
   const refresh = useCallback(() => {
     listWabaAccounts()
@@ -95,19 +104,26 @@ export default function SettingsPage() {
         <h1 style={{ fontSize: 22, marginBottom: 4 }}>Configurações</h1>
         <p className="muted" style={{ fontSize: 14 }}>
           {forbidden
-            ? 'Canal é coisa de administrador. A fila de fazenda sem dono você resolve aqui.'
+            ? 'Seu WhatsApp, conversas importadas e a fila de fazenda sem dono.'
             : 'Canal WhatsApp (WABA), telefonia Twilio e e-mail (Mailgun).'}
         </p>
       </section>
 
       {forbidden ? (
-        <UnknownsSection />
+        <>
+          <MyWhatsappSection />
+          <WhatsappImportSection myName={me?.user.name} />
+          <UnknownsSection />
+        </>
       ) : (
         <>
           <TeamSection members={members} onChanged={refresh} />
+          <TeamWhatsappSection />
+          <MyWhatsappSection />
           <WabaSection accounts={accounts} members={members} onChanged={refresh} />
           <VoiceSection accounts={voiceAccounts} members={members} onChanged={refresh} />
           <EmailSection accounts={emailAccounts} members={members} onChanged={refresh} />
+          <WhatsappImportSection myName={me?.user.name} />
           <BillingSection />
           <CarteiraSection />
           <ConsentSection />
@@ -128,7 +144,7 @@ function TeamSection({
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [invites, setInvites] = useState<Array<{ id: string; email: string; role: string; status: string }>>([]);
 
   const loadInvites = useCallback(() => {
@@ -140,10 +156,13 @@ function TeamSection({
     if (!email.trim()) return;
     setBusy(true);
     setError(null);
-    setToken(null);
+    setInviteUrl(null);
     try {
       const created = await createInvite(email.trim(), 'MEMBER');
-      setToken(created.token);
+      setInviteUrl(
+        created.inviteUrl ||
+          `${window.location.origin}/accept-invite?token=${encodeURIComponent(created.token)}`,
+      );
       setEmail('');
       loadInvites();
       onChanged();
@@ -158,8 +177,7 @@ function TeamSection({
     <section className="card">
       <h2 style={{ fontSize: 17, marginBottom: 8 }}>Time da revenda</h2>
       <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
-        Convide o RTV (MEMBER). Ele abre{' '}
-        <code>/accept-invite</code> com o token (só aparece uma vez).
+        Convide o RTV (MEMBER). Ele abre o link do convite (só aparece uma vez).
       </p>
       {members.map((m) => (
         <div
@@ -221,12 +239,16 @@ function TeamSection({
         </button>
       </div>
       {error && <p className="error" style={{ fontSize: 13, marginTop: 8 }}>{error}</p>}
-      {token && (
-        <p style={{ fontSize: 13, marginTop: 8 }}>
-          Token (copie agora): <code style={{ wordBreak: 'break-all' }}>{token}</code>
-          <br />
-          Link:{' '}
-          <code>/accept-invite</code>
+      {inviteUrl && (
+        <p style={{ fontSize: 13, marginTop: 8, wordBreak: 'break-all' }}>
+          Envie este link agora: <code>{inviteUrl}</code>{' '}
+          <button
+            type="button"
+            onClick={() => void navigator.clipboard?.writeText(inviteUrl)}
+            style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: 13 }}
+          >
+            Copiar
+          </button>
         </p>
       )}
       {invites.length > 0 && (

@@ -10,11 +10,19 @@ import {
   type ConversationSummary,
   type InboxMessage,
 } from '@/lib/inbox-api';
-import { fetchMediaUrl } from '@/lib/api';
+import Link from 'next/link';
+import { fetchMe, fetchMediaUrl, type Me } from '@/lib/api';
+import {
+  fetchMySession,
+  reportEligibility,
+  sendReport,
+  type WaSessionState,
+} from '@/lib/wa-session-api';
 import { useAudioRecorder } from '@/lib/use-audio-recorder';
 import { useTwilioDevice } from '@/lib/use-twilio-device';
 
 const POLL_MS = 5000;
+const ADMIN_ROLES = new Set(['OWNER', 'ADMIN', 'MANAGER']);
 
 export default function InboxPage() {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
@@ -22,6 +30,8 @@ export default function InboxPage() {
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
+  const [me, setMe] = useState<Me | null>(null);
+  const [session, setSession] = useState<WaSessionState | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -29,7 +39,20 @@ export default function InboxPage() {
     const m = params.get('m');
     if (c) setSelectedId(c);
     if (m) setHighlightId(m);
+    fetchMe().then(setMe).catch(() => undefined);
   }, []);
+
+  // Estado do WhatsApp do próprio usuário — banner Conectar / Reconectar.
+  useEffect(() => {
+    const load = () => fetchMySession().then(setSession).catch(() => undefined);
+    load();
+    const timer = setInterval(load, POLL_MS * 6);
+    return () => clearInterval(timer);
+  }, []);
+
+  const isAdmin = me ? ADMIN_ROLES.has(me.membership.role) : false;
+  const sessionDropped = session?.status === 'DISABLED' && Boolean(session.connectedAt);
+  const neverConnected = session?.status === 'NEVER' || (session?.status === 'DISABLED' && !session.connectedAt);
 
   const refresh = useCallback(() => {
     listConversations()
@@ -52,6 +75,24 @@ export default function InboxPage() {
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
 
   return (
+    <>
+    {sessionDropped && (
+      <Banner tone="error">
+        Seu WhatsApp desconectou — nada chega ao Inbox e nenhum relatório sai até reconectar.{' '}
+        <Link href="/settings" style={{ color: 'inherit', textDecoration: 'underline' }}>
+          Reconectar
+        </Link>
+      </Banner>
+    )}
+    {!sessionDropped && neverConnected && !isAdmin && me && (
+      <Banner tone="info">
+        Conecte seu WhatsApp para as conversas com produtores aparecerem aqui.{' '}
+        <Link href="/settings" style={{ color: 'inherit', textDecoration: 'underline' }}>
+          Conectar agora
+        </Link>{' '}
+        · leva 1 minuto, direto do celular.
+      </Banner>
+    )}
     <div
       style={{
         display: 'grid',
@@ -76,10 +117,35 @@ export default function InboxPage() {
           <p className="error" style={{ padding: 16, fontSize: 14 }}>{listError}</p>
         )}
         {loaded && !listError && conversations.length === 0 && (
-          <p className="muted" style={{ padding: 16, fontSize: 14 }}>
-            Nenhuma conversa ainda. WhatsApp, ligação ou e-mail do produtor
-            aparecem aqui.
-          </p>
+          <div className="muted" style={{ padding: 16, fontSize: 14 }}>
+            {session?.status === 'ACTIVE' ? (
+              <>
+                <p>WhatsApp conectado. Nenhuma conversa ainda.</p>
+                <p style={{ marginTop: 8 }}>
+                  Teste agora: peça a um produtor que mande um &quot;oi&quot; para o seu número —
+                  ou mande você, pelo celular. A conversa aparece aqui em segundos.
+                </p>
+              </>
+            ) : (
+              <>
+                <p>Nenhuma conversa ainda.</p>
+                {!isAdmin && (
+                  <p style={{ marginTop: 8 }}>
+                    <Link href="/settings" className="btn" style={{ display: 'inline-block' }}>
+                      Conectar meu WhatsApp
+                    </Link>
+                  </p>
+                )}
+                <p style={{ marginTop: 8 }}>
+                  Sem conexão? Em Configurações você também pode{' '}
+                  <Link href="/settings" style={{ color: 'var(--accent)' }}>
+                    importar um export .txt
+                  </Link>{' '}
+                  de uma conversa.
+                </p>
+              </>
+            )}
+          </div>
         )}
         {conversations.map((c) => (
           <button
@@ -135,6 +201,7 @@ export default function InboxPage() {
           key={selected.id}
           conversation={selected}
           highlightMessageId={highlightId}
+          isAdmin={isAdmin}
           onClose={() => {
             setSelectedId(null);
             setHighlightId(null);
@@ -143,6 +210,70 @@ export default function InboxPage() {
         />
       )}
     </div>
+    </>
+  );
+}
+
+function Banner({ tone, children }: { tone: 'error' | 'info'; children: React.ReactNode }) {
+  return (
+    <div
+      className={tone === 'error' ? 'error' : undefined}
+      style={{
+        fontSize: 14,
+        padding: '10px 14px',
+        marginBottom: 12,
+        borderRadius: 10,
+        border: '1px solid var(--border)',
+        background: 'var(--surface)',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Gestor dispara o resumo no WhatsApp do RTV; a fila aplica delay/rampa. */
+function ReportButton({ conversationId }: { conversationId: string }) {
+  const [elig, setElig] = useState<{ eligible: boolean; reason: string | null } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    reportEligibility(conversationId).then(setElig).catch(() => undefined);
+  }, [conversationId]);
+
+  async function onSend() {
+    setBusy(true);
+    setNote(null);
+    try {
+      const r = await sendReport(conversationId);
+      setNote(
+        r.queued
+          ? `Na fila — sai por volta de ${new Date(r.scheduledFor).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.`
+          : 'Enviado.',
+      );
+    } catch (err) {
+      setNote(err instanceof Error ? err.message : 'Falha ao enfileirar');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!elig) return null;
+  return (
+    <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+      {note && <span className="muted">{note}</span>}
+      {!elig.eligible && <span className="muted">Relatório: {elig.reason}</span>}
+      <button
+        className="btn"
+        style={{ padding: '6px 12px', fontSize: 13 }}
+        disabled={!elig.eligible || busy}
+        onClick={() => void onSend()}
+        title={elig.reason ?? 'Resumo com os fatos abertos + opção de parar'}
+      >
+        Enviar relatório
+      </button>
+    </span>
   );
 }
 
@@ -168,6 +299,7 @@ function channelBadgeLabel(
 ): string {
   if (kind === 'VOICE') return 'VOZ';
   if (kind === 'EMAIL') return 'E-MAIL';
+  if (kind === 'WA_SESSION') return 'WHATSAPP';
   return 'WABA';
 }
 
@@ -192,11 +324,13 @@ function ChannelBadge({ kind }: { kind: ConversationSummary['channelKind'] | und
 function ChatPane({
   conversation,
   highlightMessageId,
+  isAdmin,
   onClose,
   onChanged,
 }: {
   conversation: ConversationSummary;
   highlightMessageId: string | null;
+  isAdmin: boolean;
   onClose: () => void;
   onChanged: () => void;
 }) {
@@ -211,6 +345,7 @@ function ChatPane({
   const recorder = useAudioRecorder();
   const isVoice = conversation.channelKind === 'VOICE';
   const isEmail = conversation.channelKind === 'EMAIL';
+  const isWaSession = conversation.channelKind === 'WA_SESSION';
   const needsSubject = isEmail && !conversation.emailSubject;
   const fone = useTwilioDevice(isVoice && foneOn);
 
@@ -343,6 +478,7 @@ function ChatPane({
             {conversation.producerPhone} · via {conversation.wabaNumber.displayNumber}
           </div>
         </div>
+        {isWaSession && isAdmin && <ReportButton conversationId={conversation.id} />}
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -458,7 +594,7 @@ function ChatPane({
               }}
               disabled={sending}
             />
-            {draft.trim() || isEmail ? (
+            {draft.trim() || isEmail || isWaSession ? (
               <button
                 className="btn"
                 onClick={onSendText}

@@ -72,7 +72,7 @@ export interface DashboardHome {
 
 export interface FactDetail extends Omit<FactCard, 'evidenceMessageId' | 'conversationId'> {
   status: string;
-  channelKind: 'WABA' | 'VOICE' | 'EMAIL';
+  channelKind: 'WABA' | 'VOICE' | 'EMAIL' | 'WA_SESSION';
   evidence: {
     messageId: string;
     conversationId: string;
@@ -121,7 +121,7 @@ export const patchFactStatus = (id: string, status: 'OPEN' | 'RESOLVED' | 'DISMI
   });
 
 export const sendDiscountReply = (id: string, text: string) =>
-  api<{ ok: true; sent: boolean; channel: 'WABA' | 'VOICE' | 'EMAIL' }>(
+  api<{ ok: true; sent: boolean; channel: 'WABA' | 'VOICE' | 'EMAIL' | 'WA_SESSION' }>(
     `/dashboard/facts/${id}/discount-reply`,
     {
       method: 'POST',

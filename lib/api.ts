@@ -6,7 +6,7 @@
  */
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, '') ?? 'http://localhost:8080';
+  process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, '') ?? 'https://farm-backend-production-7bc0.up.railway.app';
 
 const ACCESS_KEY = 'farm_access_token';
 const REFRESH_KEY = 'farm_refresh_token';
