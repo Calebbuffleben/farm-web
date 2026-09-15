@@ -61,9 +61,11 @@ export interface InboxMessage {
 export const listConversations = () =>
   api<ConversationSummary[]>('/inbox/conversations');
 
+export type BriefAnalysis = 'ready' | 'pending' | 'waiting_producer' | 'blocked';
+
 export const fetchBrief = (conversationId: string) =>
-  api<{ brief: DealBrief | null }>(`/inbox/conversations/${conversationId}/brief`).then(
-    (r) => r.brief,
+  api<{ brief: DealBrief | null; analysis?: BriefAnalysis }>(
+    `/inbox/conversations/${conversationId}/brief`,
   );
 
 export const listMessages = (conversationId: string) =>

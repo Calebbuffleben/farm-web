@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchBrief, type DealBrief } from '@/lib/inbox-api';
+import { fetchBrief, type BriefAnalysis, type DealBrief } from '@/lib/inbox-api';
 import {
   blockerLabel,
   Chip,
@@ -24,26 +24,36 @@ export function DealCardBoard({
   conversationId: string;
   refreshKey: number;
 }) {
-  const [brief, setBrief] = useState<DealBrief | null | undefined>(undefined);
+  const [brief, setBrief] = useState<DealBrief | null>(null);
+  const [analysis, setAnalysis] = useState<BriefAnalysis | null>(null);
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     const load = () =>
       fetchBrief(conversationId)
-        .then(setBrief)
-        .catch(() => setBrief((prev) => prev ?? null));
+        .then((r) => {
+          setBrief(r.brief);
+          setAnalysis(r.analysis ?? (r.brief ? 'ready' : 'waiting_producer'));
+        })
+        .catch(() => {
+          setBrief((prev) => prev);
+        });
     load();
-    // A análise do worker chega segundos depois da mensagem: repolling curto.
-    const timer = setInterval(load, 15_000);
+    const timer = setInterval(load, analysis === 'pending' ? 4_000 : 15_000);
     return () => clearInterval(timer);
-  }, [conversationId, refreshKey]);
+  }, [conversationId, refreshKey, analysis]);
 
-  if (brief === undefined) return null;
-  if (brief === null) {
+  if (analysis === null) return null;
+  if (!brief) {
+    const copy =
+      analysis === 'pending'
+        ? 'A IA está analisando esta conversa — o card aparece em alguns segundos.'
+        : analysis === 'blocked'
+          ? 'Análise bloqueada pelo consentimento deste produtor.'
+          : 'Aguardando a primeira mensagem do produtor para montar o Card de Bordo.';
     return (
       <div className="border-b border-border bg-surface-2/60 px-4 py-2 text-xs text-faint">
-        A IA ainda não analisou esta conversa — o Card de Bordo aparece após a primeira
-        mensagem do produtor.
+        {copy}
       </div>
     );
   }
