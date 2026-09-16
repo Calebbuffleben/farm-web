@@ -21,6 +21,7 @@ import {
   cx,
   DataTable,
   Empty,
+  Icon,
   KIND_LABEL,
   relativeTime,
   SectionHeader,
@@ -84,33 +85,44 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="grid gap-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+    <div className="grid gap-10">
+      <header className="flex flex-wrap items-start justify-between gap-5">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Centro de Comando</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted">
-            Onde cada cliente está e o que fazer para vender mais — escrito pela IA a partir
-            das conversas, sem o RTV preencher nada.
+          <div className="eyebrow mb-2 flex items-center gap-1.5">
+            <Icon name="spark" className="size-3.5" />
+            Inteligência comercial
+          </div>
+          <h1 className="page-title">Visão executiva</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+            Prioridades, movimento da carteira e próximos passos extraídos das conversas do time.
           </p>
         </div>
-        {home && (
-          <Filters
-            home={home}
-            query={query}
-            onChange={(next) => {
-              setQuery(next);
-              setDealId(null);
-              setFact(null);
-            }}
-          />
-        )}
+        <div className="flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-2 text-xs text-muted shadow-sm">
+          <span className="size-2 rounded-full bg-accent shadow-[0_0_0_4px_rgba(22,101,52,0.1)]" />
+          Análise ativa
+        </div>
       </header>
 
       {error && <p className="error">{error}</p>}
-      {!home && !error && <p className="muted">Carregando…</p>}
+      {!home && !error && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((n) => <div key={n} className="h-28 animate-pulse rounded-card bg-surface-3/60" />)}
+        </div>
+      )}
 
       {home && (
         <>
+          <div className="-mt-5 rounded-card border border-border bg-surface p-3 shadow-[0_6px_24px_rgba(20,36,25,0.04)]">
+            <Filters
+              home={home}
+              query={query}
+              onChange={(next) => {
+                setQuery(next);
+                setDealId(null);
+                setFact(null);
+              }}
+            />
+          </div>
           <Today home={home} onOpenDeal={setDealId} />
           <Radar
             rows={home.radar}
@@ -123,10 +135,10 @@ export default function DashboardPage() {
           <Signals home={home} onOpenFact={openFact} />
           {home.unknownPending > 0 && (
             <p className="text-sm">
-              <Link href="/settings" className="text-accent">
-                {home.unknownPending} trecho{home.unknownPending === 1 ? '' : 's'} na fila unknown
+              <Link href="/settings#unknown" className="font-medium text-accent">
+                {home.unknownPending} vínculo{home.unknownPending === 1 ? '' : 's'} para revisar
               </Link>
-              <span className="muted"> — vínculo humano, o LLM não chuta.</span>
+              <span className="muted"> — confirme a fazenda para manter a carteira precisa.</span>
             </p>
           )}
         </>
@@ -163,8 +175,8 @@ function Today({
   return (
     <section>
       <SectionHeader
-        title="Hoje"
-        subtitle={`${s.deals} negócio${s.deals === 1 ? '' : 's'} aberto${s.deals === 1 ? '' : 's'} · janela de ${home.window.days} dias para fatos`}
+        title="O que pede atenção"
+        subtitle={`${s.deals} negócio${s.deals === 1 ? '' : 's'} em andamento · sinais dos últimos ${home.window.days} dias`}
       />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Quentes" value={s.hot} tone="hot" hint="intenção ou urgência alta, contato ≤ 3 d" />
@@ -178,7 +190,11 @@ function Today({
         <Stat label="Follow-ups vencidos" value={s.overdueFollowups} tone="cooling" />
       </div>
 
-      <div className="mt-4">
+      <div className="mt-5">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-[0.1em] text-muted">Fila de prioridades</h3>
+          {home.attention.length > 0 && <span className="text-xs text-faint">{home.attention.length} para revisar</span>}
+        </div>
         {home.attention.length === 0 ? (
           <Empty
             title="Nada pedindo atenção agora."
@@ -199,7 +215,7 @@ function Today({
 function AttentionRow({ item, onOpen }: { item: AttentionItem; onOpen: () => void }) {
   return (
     <li>
-      <Card onClick={onOpen} className="!p-3.5">
+      <Card onClick={onOpen} className="group !p-4">
         <div className="flex flex-wrap items-center gap-2">
           <TempDot temperature={item.temperature} withLabel />
           <span className="text-sm font-semibold">
@@ -209,12 +225,13 @@ function AttentionRow({ item, onOpen }: { item: AttentionItem; onOpen: () => voi
             <span className="text-xs text-muted">· {item.farmNames.join(', ')}</span>
           )}
           <StageChip stage={item.stage} />
-          <span className="ml-auto flex flex-wrap gap-1">
+          <span className="ml-auto flex flex-wrap items-center gap-1">
             {item.reasons.map((r) => (
               <Chip key={r} tone={r === 'hot_with_pain' ? 'danger' : 'warning'}>
                 {REASON_LABEL[r]}
               </Chip>
             ))}
+            <Icon name="chevron" className="ml-1 size-4 text-faint transition group-hover:translate-x-0.5 group-hover:text-accent" />
           </span>
         </div>
         <div className="mt-2 grid gap-1 text-[13px] sm:grid-cols-2">
@@ -260,8 +277,8 @@ function Radar({
   return (
     <section>
       <SectionHeader
-        title="Radar de Performance"
-        subtitle="Temperatura da carteira por RTV. Clique para cortar o painel por vendedor."
+        title="Saúde da equipe"
+        subtitle="Temperatura da carteira por RTV. Selecione um nome para aprofundar a leitura."
       />
       <DataTable
         rows={rows}
@@ -306,7 +323,7 @@ function Radar({
           { key: 'overdue', header: 'Atrasados', align: 'right', render: (r) => r.overdueFollowups },
           {
             key: 'score',
-            header: 'Precisa de ajuda',
+            header: 'Índice de atenção',
             align: 'right',
             render: (r) => (
               <span className={cx('font-semibold', r.score >= 6 ? 'text-danger' : r.score >= 3 ? 'text-cooling' : 'text-muted')}>
@@ -334,8 +351,8 @@ function PipelineSection({
   return (
     <section>
       <SectionHeader
-        title="Pipeline Invisível"
-        subtitle={`${home.pipeline.open} negócio${home.pipeline.open === 1 ? '' : 's'} em andamento, agrupados pelo que a IA leu nas conversas — sem funil preenchido.`}
+        title="Pipeline automático"
+        subtitle={`${home.pipeline.open} negócio${home.pipeline.open === 1 ? '' : 's'} em andamento, organizados automaticamente a partir das conversas.`}
         right={
           noDeal && noDeal.count > 0 ? (
             <span className="text-xs text-faint">{noDeal.count} conversa{noDeal.count === 1 ? '' : 's'} sem negócio</span>
@@ -344,10 +361,10 @@ function PipelineSection({
       />
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {stages.map((col) => (
-          <div key={col.stage} className="rounded-card border border-border bg-surface/60 p-2.5">
-            <div className="mb-2 flex items-center justify-between px-1">
+          <div key={col.stage} className="rounded-card border border-border bg-surface-2/50 p-3">
+            <div className="mb-3 flex items-center justify-between px-1">
               <span className="text-sm font-semibold">{STAGE_LABEL[col.stage]}</span>
-              <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs tabular-nums text-muted">
+              <span className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-semibold tabular-nums text-muted shadow-sm">
                 {col.count}
               </span>
             </div>
@@ -372,7 +389,7 @@ function PipelineSection({
         <div className="mb-2 flex items-baseline gap-2">
           <h3 className="text-sm font-semibold">Gargalos</h3>
           <span className="text-xs text-muted">
-            o que está travando — pistas de valor em texto, R$ apurado só com ERP
+            principais motivos que estão desacelerando as negociações
           </span>
         </div>
         {home.pipeline.byBlocker.length === 0 ? (
@@ -465,6 +482,10 @@ function Filters({
   );
   return (
     <div className="flex flex-wrap items-center gap-2">
+      <div className="mr-1 flex items-center gap-2 px-1 text-xs font-semibold text-muted">
+        <Icon name="filter" className="size-4" />
+        Filtros
+      </div>
       <Segmented
         value={query.days ?? 7}
         onChange={(days) => set({ days })}

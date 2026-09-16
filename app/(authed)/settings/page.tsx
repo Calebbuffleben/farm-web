@@ -45,6 +45,7 @@ import { WhatsappImportSection } from './whatsapp-import-section';
 import { MyWhatsappSection } from './my-whatsapp-section';
 import { TeamWhatsappSection } from './team-whatsapp-section';
 import { SalesPolicySection } from './sales-policy-section';
+import { Icon } from '@/components/ui';
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, '') ?? 'http://localhost:8080';
@@ -100,39 +101,109 @@ export default function SettingsPage() {
   useEffect(refresh, [refresh]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 760 }}>
-      <section>
-        <h1 style={{ fontSize: 22, marginBottom: 4 }}>Configurações</h1>
-        <p className="muted" style={{ fontSize: 14 }}>
+    <div className="mx-auto grid max-w-[1120px] gap-8">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="eyebrow mb-2">Administração</div>
+          <h1 className="page-title">Configurações</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
           {forbidden
-            ? 'Seu WhatsApp, conversas importadas e a fila de fazenda sem dono.'
-            : 'Canal WhatsApp (WABA), telefonia Twilio e e-mail (Mailgun).'}
-        </p>
-      </section>
+            ? 'Gerencie sua conexão, importações e vínculos pendentes.'
+            : 'Equipe, regras comerciais, canais e governança da sua operação.'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-2 text-xs text-muted">
+          <span className="size-2 rounded-full bg-accent" />
+          Ambiente da revenda
+        </div>
+      </header>
 
       {forbidden ? (
-        <>
+        <div className="settings-grid grid gap-5">
           <MyWhatsappSection />
           <WhatsappImportSection myName={me?.user.name} />
-          <UnknownsSection />
-        </>
+          <div id="unknown" className="scroll-mt-8"><UnknownsSection /></div>
+        </div>
       ) : (
-        <>
-          <TeamSection members={members} onChanged={refresh} />
-          <SalesPolicySection />
-          <TeamWhatsappSection />
-          <MyWhatsappSection />
-          <WabaSection accounts={accounts} members={members} onChanged={refresh} />
-          <VoiceSection accounts={voiceAccounts} members={members} onChanged={refresh} />
-          <EmailSection accounts={emailAccounts} members={members} onChanged={refresh} />
-          <WhatsappImportSection myName={me?.user.name} />
-          <BillingSection />
-          <CarteiraSection />
-          <ConsentSection />
-          <UnknownsSection />
-        </>
+        <div className="grid items-start gap-7 lg:grid-cols-[210px_minmax(0,1fr)]">
+          <aside className="sticky top-8 hidden rounded-card border border-border bg-surface p-2 shadow-sm lg:block">
+            <p className="px-3 pb-2 pt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-faint">Nesta página</p>
+            <SettingsLink href="#equipe" label="Equipe e estratégia" />
+            <SettingsLink href="#canais" label="Canais de contato" />
+            <SettingsLink href="#dados" label="Dados e governança" />
+          </aside>
+          <div className="settings-grid grid gap-8">
+            <SettingsGroup
+              id="equipe"
+              eyebrow="Pessoas e operação"
+              title="Equipe e estratégia"
+              description="Defina acessos, política comercial e acompanhe as conexões do time."
+            >
+              <TeamSection members={members} onChanged={refresh} />
+              <SalesPolicySection />
+              <TeamWhatsappSection />
+              <MyWhatsappSection />
+              <BillingSection />
+            </SettingsGroup>
+            <SettingsGroup
+              id="canais"
+              eyebrow="Integrações"
+              title="Canais de contato"
+              description="Conecte os pontos de entrada usados no relacionamento com produtores."
+            >
+              <WabaSection accounts={accounts} members={members} onChanged={refresh} />
+              <VoiceSection accounts={voiceAccounts} members={members} onChanged={refresh} />
+              <EmailSection accounts={emailAccounts} members={members} onChanged={refresh} />
+              <WhatsappImportSection myName={me?.user.name} />
+            </SettingsGroup>
+            <SettingsGroup
+              id="dados"
+              eyebrow="Controle"
+              title="Dados e governança"
+              description="Mantenha carteira, consentimentos e vínculos humanos sob controle."
+            >
+              <CarteiraSection />
+              <ConsentSection />
+              <div id="unknown" className="scroll-mt-8"><UnknownsSection /></div>
+            </SettingsGroup>
+          </div>
+        </div>
       )}
     </div>
+  );
+}
+
+function SettingsLink({ href, label }: { href: string; label: string }) {
+  return (
+    <a href={href} className="flex items-center justify-between rounded-control px-3 py-2.5 text-[13px] font-medium text-muted transition hover:bg-surface-2 hover:text-text">
+      {label}
+      <Icon name="chevron" className="size-3.5" />
+    </a>
+  );
+}
+
+function SettingsGroup({
+  id,
+  eyebrow,
+  title,
+  description,
+  children,
+}: {
+  id: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section id={id} className="scroll-mt-8">
+      <div className="mb-4">
+        <p className="eyebrow mb-1.5">{eyebrow}</p>
+        <h2 className="text-xl font-semibold tracking-[-0.025em]">{title}</h2>
+        <p className="mt-1 text-sm text-muted">{description}</p>
+      </div>
+      <div className="grid gap-4">{children}</div>
+    </section>
   );
 }
 

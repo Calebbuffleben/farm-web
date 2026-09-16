@@ -29,8 +29,8 @@ export function Signals({
   return (
     <section>
       <SectionHeader
-        title="Sinais"
-        subtitle="As 5 perguntas do gestor sobre fatos abertos — cada uma abre até a evidência."
+        title="Perguntas de gestão"
+        subtitle="Respostas objetivas para as cinco perguntas que orientam a rotina do gestor."
         right={
           <button className="btn-ghost !py-1 text-xs" onClick={() => setCollapsed((v) => !v)}>
             {collapsed ? 'Mostrar' : 'Recolher'}
@@ -98,7 +98,7 @@ function QuestionBody({
   const empty = (
     <Empty
       title="Nenhum fato aberto neste recorte."
-      hint="Quando o worker analisar conversas, eles aparecem aqui — cada um clicável até a mensagem."
+      hint="Novos sinais aparecem aqui conforme as conversas do time são analisadas."
     />
   );
   if (question === 'objections') {

@@ -1,38 +1,33 @@
 @import 'tailwindcss';
 
-/*
- * Paleta verde do Farm como tokens Tailwind 4. As variáveis legadas (--bg,
- * --surface…) continuam existindo porque /settings, /login e /accept-invite
- * ainda usam estilos inline com elas. Upgrade: migrar essas telas e apagar.
- */
 @theme {
-  --color-bg: #0f1a14;
-  --color-surface: #16241c;
-  --color-surface-2: #1d2f25;
-  --color-surface-3: #24392d;
-  --color-border: #2a4234;
-  --color-border-strong: #3a5a48;
-  --color-text: #e8f2ec;
-  --color-muted: #93ab9d;
-  --color-faint: #5f7a6a;
-  --color-accent: #4ade80;
-  --color-accent-dark: #22c55e;
-  --color-accent-ink: #06130b;
-  --color-danger: #f87171;
-  --color-warning: #fbbf24;
-  --color-info: #60a5fa;
+  --color-bg: #f4f6f2;
+  --color-surface: #ffffff;
+  --color-surface-2: #f0f3ee;
+  --color-surface-3: #e4e9e1;
+  --color-border: #dce3da;
+  --color-border-strong: #c1ccc0;
+  --color-text: #17231b;
+  --color-muted: #627067;
+  --color-faint: #8a968e;
+  --color-accent: #166534;
+  --color-accent-dark: #0e4f28;
+  --color-accent-ink: #ffffff;
+  --color-danger: #b42318;
+  --color-warning: #a15c07;
+  --color-info: #175cd3;
 
   /* Temperatura do negócio */
-  --color-hot: #f97316;
-  --color-warm: #4ade80;
-  --color-cooling: #fbbf24;
-  --color-cold: #64748b;
+  --color-hot: #d92d20;
+  --color-warm: #16803c;
+  --color-cooling: #d97706;
+  --color-cold: #78867c;
 
-  --radius-card: 14px;
-  --radius-control: 10px;
+  --radius-card: 18px;
+  --radius-control: 11px;
 
   --font-sans:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+    'Inter', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 :root {
@@ -45,10 +40,16 @@
   --accent: var(--color-accent);
   --accent-dark: var(--color-accent-dark);
   --danger: var(--color-danger);
-  --radius: 12px;
+  --warning: var(--color-warning);
+  --success: var(--color-accent);
+  --radius: 16px;
 }
 
 @layer base {
+  * {
+    box-sizing: border-box;
+  }
+
   html,
   body {
     height: 100%;
@@ -59,6 +60,11 @@
     color: var(--color-text);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    background-image:
+      radial-gradient(circle at 8% -10%, rgba(22, 101, 52, 0.08), transparent 28rem),
+      radial-gradient(circle at 100% 100%, rgba(205, 222, 194, 0.22), transparent 34rem);
+    background-attachment: fixed;
   }
 
   a {
@@ -70,23 +76,68 @@
     cursor: pointer;
   }
 
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  code {
+    border-radius: 5px;
+    background: var(--color-surface-2);
+    padding: 0.12em 0.35em;
+    color: var(--color-accent-dark);
+    font-size: 0.88em;
+  }
+
+  input[type='file'] {
+    max-width: 100%;
+    color: var(--color-muted);
+    font-size: 13px;
+  }
+
+  input[type='file']::file-selector-button {
+    margin-right: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-control);
+    background: var(--color-surface-2);
+    padding: 8px 12px;
+    color: var(--color-text);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: rgba(22, 101, 52, 0.18);
+  }
+
+  :focus-visible {
+    outline: 3px solid rgba(22, 101, 52, 0.24);
+    outline-offset: 2px;
+  }
+
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 9px;
+    height: 9px;
   }
   ::-webkit-scrollbar-thumb {
-    background: var(--color-border);
+    background: var(--color-border-strong);
     border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
   }
 }
 
-/* Classes legadas — mesmos nomes, agora sobre os tokens. */
 @layer components {
   .card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-card);
     padding: 24px;
+    box-shadow:
+      0 1px 2px rgba(20, 36, 25, 0.03),
+      0 10px 28px rgba(20, 36, 25, 0.045);
   }
 
   .btn {
@@ -96,14 +147,21 @@
     gap: 8px;
     background: var(--color-accent);
     color: var(--color-accent-ink);
-    font-weight: 600;
+    font-weight: 650;
     border: none;
     border-radius: var(--radius-control);
-    padding: 10px 18px;
-    transition: background 120ms ease;
+    min-height: 40px;
+    padding: 9px 17px;
+    box-shadow: 0 1px 2px rgba(6, 45, 20, 0.18);
+    transition:
+      background 150ms ease,
+      transform 150ms ease,
+      box-shadow 150ms ease;
   }
   .btn:hover {
     background: var(--color-accent-dark);
+    box-shadow: 0 5px 14px rgba(6, 78, 34, 0.16);
+    transform: translateY(-1px);
   }
   .btn:disabled {
     opacity: 0.5;
@@ -120,10 +178,12 @@
     font-weight: 500;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-control);
+    min-height: 38px;
     padding: 8px 14px;
     transition:
       border-color 120ms ease,
-      background 120ms ease;
+      background 120ms ease,
+      color 120ms ease;
   }
   .btn-ghost:hover {
     border-color: var(--color-border-strong);
@@ -136,20 +196,30 @@
 
   .input {
     width: 100%;
-    background: var(--color-surface-2);
+    background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-control);
     color: var(--color-text);
-    padding: 10px 14px;
+    min-height: 42px;
+    padding: 10px 13px;
     outline: none;
+    box-shadow: 0 1px 2px rgba(20, 36, 25, 0.025);
+    transition:
+      border-color 140ms ease,
+      box-shadow 140ms ease;
   }
   .input:focus {
     border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.1);
+  }
+  .input::placeholder {
+    color: var(--color-faint);
   }
 
   .label {
     display: block;
-    font-size: 13px;
+    font-size: 12px;
+    font-weight: 600;
     color: var(--color-muted);
     margin-bottom: 6px;
   }
@@ -161,5 +231,99 @@
 
   .muted {
     color: var(--color-muted);
+  }
+
+  .eyebrow {
+    color: var(--color-accent);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .page-title {
+    font-size: clamp(1.65rem, 2.2vw, 2.15rem);
+    font-weight: 680;
+    letter-spacing: -0.035em;
+    line-height: 1.12;
+  }
+
+  .section-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    box-shadow: 0 8px 30px rgba(20, 36, 25, 0.04);
+  }
+
+  .auth-shell {
+    min-height: 100dvh;
+    display: grid;
+    grid-template-columns: minmax(320px, 0.9fr) minmax(420px, 1.1fr);
+    background: var(--color-surface);
+  }
+
+  .auth-visual {
+    position: relative;
+    display: flex;
+    min-height: 100%;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    padding: clamp(36px, 6vw, 76px);
+    color: #f7fbf7;
+    background:
+      linear-gradient(155deg, rgba(6, 42, 23, 0.2), rgba(6, 42, 23, 0.86)),
+      radial-gradient(circle at 20% 15%, #3f8450, transparent 45%),
+      #0e3b22;
+  }
+
+  .auth-panel {
+    display: grid;
+    place-items: center;
+    padding: 32px;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(22, 101, 52, 0.07), transparent 22rem),
+      var(--color-surface);
+  }
+
+  .auth-form {
+    width: min(100%, 430px);
+  }
+
+  .settings-grid > .card {
+    box-shadow: 0 5px 20px rgba(20, 36, 25, 0.035);
+  }
+
+  .settings-grid .card h2 {
+    color: var(--color-text);
+    font-weight: 650;
+    letter-spacing: -0.02em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .auth-shell {
+      grid-template-columns: 1fr;
+    }
+    .auth-visual {
+      display: none;
+    }
+    .auth-panel {
+      min-height: 100dvh;
+      padding: 24px;
+    }
+    .card {
+      padding: 18px;
+    }
   }
 }

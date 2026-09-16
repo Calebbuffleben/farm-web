@@ -5,7 +5,75 @@
  * globals.css. Tudo aqui é apresentação; regra de negócio fica em lib/.
  */
 
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
+
+export type IconName =
+  | 'inbox'
+  | 'dashboard'
+  | 'settings'
+  | 'logout'
+  | 'chevron'
+  | 'arrow'
+  | 'spark'
+  | 'filter'
+  | 'search'
+  | 'send'
+  | 'mic'
+  | 'close';
+
+export function Icon({
+  name,
+  className = 'size-4',
+}: {
+  name: IconName;
+  className?: string;
+}) {
+  const paths: Record<IconName, ReactNode> = {
+    inbox: <><path d="M4 4h16v14H4z" /><path d="M4 14h4l2 3h4l2-3h4" /></>,
+    dashboard: <><rect x="3" y="3" width="7" height="7" rx="2" /><rect x="14" y="3" width="7" height="7" rx="2" /><rect x="3" y="14" width="7" height="7" rx="2" /><rect x="14" y="14" width="7" height="7" rx="2" /></>,
+    settings: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.1A1.7 1.7 0 0 0 8.5 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3V9.6h.1A1.7 1.7 0 0 0 4.6 8.5a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.5 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.4.26.7.62.6 1.1v.1h1v4h-.1a1.7 1.7 0 0 0-1.5.8Z" /></>,
+    logout: <><path d="M10 17l5-5-5-5" /><path d="M15 12H3" /><path d="M15 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" /></>,
+    chevron: <path d="m9 18 6-6-6-6" />,
+    arrow: <><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></>,
+    spark: <><path d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4L12 3Z" /><path d="m18 15 .7 2.3L21 18l-2.3.7L18 21l-.7-2.3L15 18l2.3-.7L18 15Z" /></>,
+    filter: <path d="M4 5h16M7 12h10m-7 7h4" />,
+    search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></>,
+    send: <><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></>,
+    mic: <><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10a7 7 0 0 0 14 0M12 17v5" /></>,
+    close: <path d="m6 6 12 12M18 6 6 18" />,
+  };
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      {paths[name]}
+    </svg>
+  );
+}
+
+export function BrandMark({ className = 'size-9' }: { className?: string }) {
+  return (
+    <span
+      className={cx(
+        'relative grid shrink-0 place-items-center overflow-hidden rounded-[12px] bg-accent text-accent-ink shadow-[0_5px_14px_rgba(22,101,52,0.22)]',
+        className,
+      )}
+    >
+      <svg viewBox="0 0 32 32" className="size-[68%]" fill="none" aria-hidden>
+        <path d="M7 24V9.5C7 8.12 8.12 7 9.5 7H23" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
+        <path d="M8 16h10" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
+        <path d="M18.5 5.5c0 3.3-1.8 5.5-5.5 5.5 0-3.4 1.9-5.5 5.5-5.5Z" fill="currentColor" />
+      </svg>
+    </span>
+  );
+}
 
 export type DealStage =
   | 'SONDAGEM'
@@ -92,10 +160,10 @@ export function Card({
     <Tag
       onClick={onClick}
       className={cx(
-        'rounded-card border border-border bg-surface text-left',
+        'rounded-card border border-border bg-surface text-left shadow-[0_5px_20px_rgba(20,36,25,0.035)]',
         padded && 'p-5',
         onClick &&
-          'w-full transition hover:border-border-strong hover:bg-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
+          'w-full transition duration-150 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-[0_10px_28px_rgba(20,36,25,0.08)] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30',
         className,
       )}
     >
@@ -118,8 +186,8 @@ export function SectionHeader({
   return (
     <div className={cx('mb-4 flex flex-wrap items-end justify-between gap-3', className)}>
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-        {subtitle && <p className="mt-0.5 text-sm text-muted">{subtitle}</p>}
+        <h2 className="text-[17px] font-semibold tracking-[-0.02em]">{title}</h2>
+        {subtitle && <p className="mt-1 text-[13px] leading-relaxed text-muted">{subtitle}</p>}
       </div>
       {right && <div className="flex items-center gap-2">{right}</div>}
     </div>
@@ -151,10 +219,11 @@ export function Stat({
   return (
     <Card
       onClick={onClick}
-      className={cx('min-w-0', active && 'border-accent/70 bg-surface-2')}
+      className={cx('relative min-w-0 overflow-hidden', active && 'border-accent/50 bg-surface-2')}
     >
-      <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
-      <div className={cx('mt-1 text-3xl font-semibold tabular-nums', toneCls[tone])}>
+      <div className={cx('absolute inset-x-0 top-0 h-0.5', tone === 'neutral' ? 'bg-border-strong' : tone === 'accent' ? 'bg-accent' : tone === 'hot' ? 'bg-hot' : tone === 'danger' ? 'bg-danger' : 'bg-cooling')} />
+      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">{label}</div>
+      <div className={cx('mt-2 text-[32px] font-semibold leading-none tabular-nums tracking-[-0.04em]', toneCls[tone])}>
         {value}
       </div>
       {hint && <div className="mt-1 text-xs text-faint">{hint}</div>}
@@ -185,7 +254,7 @@ export function Chip({
     <span
       title={title}
       className={cx(
-        'inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium leading-4',
+        'inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-semibold leading-[18px]',
         toneCls[tone],
         className,
       )}
@@ -268,7 +337,11 @@ export function TempBar({
       />
     ) : null;
   return (
-    <div className={cx('flex h-2 overflow-hidden rounded-full bg-surface-3', className)}>
+    <div
+      className={cx('flex h-2 overflow-hidden rounded-full bg-surface-3', className)}
+      role="img"
+      aria-label={`Carteira: ${hot} quente, ${warm} morno, ${cooling} esfriando e ${cold} frio`}
+    >
       {seg(hot, TEMP_BG.HOT, 'Quente')}
       {seg(warm, TEMP_BG.WARM, 'Morno')}
       {seg(cooling, TEMP_BG.COOLING, 'Esfriando')}
@@ -352,27 +425,48 @@ export function Drawer({
   children: ReactNode;
   width?: number;
 }) {
+  const dialogRef = useRef<HTMLElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCloseRef.current();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    dialogRef.current?.focus();
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      previous?.focus();
+    };
+  }, [open]);
+
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/55" onClick={onClose} aria-hidden />
+      <div className="absolute inset-0 bg-[#102117]/35 backdrop-blur-[2px]" onClick={onClose} aria-hidden />
       <aside
+        ref={dialogRef}
         role="dialog"
         aria-modal
-        className="relative flex h-full w-full flex-col border-l border-border bg-bg shadow-2xl"
+        aria-label={typeof title === 'string' ? title : 'Detalhes'}
+        tabIndex={-1}
+        className="relative flex h-full w-full flex-col border-l border-border bg-surface shadow-2xl"
         style={{ maxWidth: width }}
       >
-        <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+        <header className="flex items-center justify-between gap-3 border-b border-border px-6 py-5">
           <div className="min-w-0 flex-1 text-base font-semibold">{title}</div>
           <button
             onClick={onClose}
             aria-label="Fechar"
-            className="rounded-control border border-border px-2.5 py-1 text-sm text-muted hover:text-text"
+            className="grid size-9 place-items-center rounded-full border border-border text-muted transition hover:bg-surface-2 hover:text-text"
           >
-            ✕
+            <Icon name="close" />
           </button>
         </header>
-        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
       </aside>
     </div>
   );
@@ -401,15 +495,15 @@ export function DataTable<T>({
 }) {
   if (!rows.length && empty) return <>{empty}</>;
   return (
-    <div className="overflow-x-auto rounded-card border border-border">
+    <div className="overflow-x-auto rounded-card border border-border bg-surface shadow-[0_5px_20px_rgba(20,36,25,0.035)]">
       <table className="w-full text-sm">
-        <thead className="bg-surface-2 text-xs uppercase tracking-wide text-muted">
+        <thead className="bg-surface-2/80 text-[10px] uppercase tracking-[0.09em] text-muted">
           <tr>
             {columns.map((c) => (
               <th
                 key={c.key}
                 className={cx(
-                  'px-3 py-2 font-medium',
+                  'px-4 py-3 font-semibold',
                   c.align === 'right' ? 'text-right' : 'text-left',
                   c.className,
                 )}
@@ -427,9 +521,21 @@ export function DataTable<T>({
               <tr
                 key={key}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
+                onKeyDown={
+                  onRowClick
+                    ? (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          onRowClick(row);
+                        }
+                      }
+                    : undefined
+                }
+                tabIndex={onRowClick ? 0 : undefined}
+                role={onRowClick ? 'button' : undefined}
                 className={cx(
-                  'border-t border-border',
-                  onRowClick && 'cursor-pointer hover:bg-surface-2',
+                  'border-t border-border transition-colors',
+                  onRowClick && 'cursor-pointer hover:bg-surface-2/65',
                   active && 'bg-surface-2',
                 )}
               >
@@ -437,7 +543,7 @@ export function DataTable<T>({
                   <td
                     key={c.key}
                     className={cx(
-                      'px-3 py-2.5 align-middle',
+                      'px-4 py-3 align-middle',
                       c.align === 'right' ? 'text-right tabular-nums' : 'text-left',
                       c.className,
                     )}

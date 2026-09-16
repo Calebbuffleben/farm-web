@@ -6,6 +6,7 @@ import {
   blockerLabel,
   Chip,
   cx,
+  Icon,
   KIND_LABEL,
   LEVEL_LABEL,
   relativeTime,
@@ -54,22 +55,27 @@ export function DealCardBoard({
       analysis === 'blocked'
         ? 'Análise bloqueada pelo consentimento deste produtor.'
         : hasProducerMessage || analysis === 'pending'
-          ? 'Mensagem recebida. A IA ainda não gravou o Card de Bordo — o worker precisa consumir a fila e POST /analysis.'
+          ? 'Mensagem recebida. Estamos atualizando o resumo e os próximos passos.'
           : 'Aguardando a primeira mensagem do produtor para montar o Card de Bordo.';
     return (
-      <div className="border-b border-border bg-surface-2/60 px-4 py-2 text-xs text-faint">
+      <div className="flex items-center gap-2 border-b border-border bg-surface-2/60 px-4 py-2.5 text-xs text-faint">
+        <Icon name="spark" className="size-3.5" />
         {copy}
       </div>
     );
   }
 
   return (
-    <div className="border-b border-border bg-surface-2/60">
+    <div className="border-b border-border bg-[linear-gradient(90deg,rgba(22,101,52,0.06),transparent)]">
       <button
         onClick={() => setCollapsed((v) => !v)}
-        className="flex w-full items-center gap-2 px-4 py-2 text-left"
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left"
         aria-expanded={!collapsed}
       >
+        <span className="mr-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.09em] text-accent">
+          <Icon name="spark" className="size-3.5" />
+          Resumo IA
+        </span>
         <TempDot temperature={brief.temperature} withLabel />
         <StageChip stage={brief.stage} />
         {brief.blockerSubtype && <Chip tone="warning">{blockerLabel(brief.blockerSubtype)}</Chip>}
@@ -121,7 +127,7 @@ export function DealCardBoard({
               {brief.products.length > 0 && <> · {brief.products.join(', ')}</>}
             </p>
           </div>
-          <div className="rounded-card border border-accent/40 bg-accent/10 p-3">
+          <div className="rounded-card border border-accent/20 bg-accent/[0.06] p-3.5 shadow-sm">
             <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-accent">
               Próximo passo
               <Chip tone="accent">{KIND_LABEL[brief.nextActionKind] ?? brief.nextActionKind}</Chip>

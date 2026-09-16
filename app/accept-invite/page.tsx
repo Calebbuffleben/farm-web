@@ -3,6 +3,7 @@
 import { FormEvent, Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, storeTokens } from '@/lib/api';
+import { BrandMark, Icon } from '@/components/ui';
 
 interface AcceptPublicResponse {
   accessToken?: string;
@@ -46,23 +47,35 @@ function AcceptInviteForm() {
   }
 
   return (
-    <main
-      style={{
-        minHeight: '100dvh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 16,
-      }}
-    >
-      <div className="card" style={{ width: '100%', maxWidth: 400 }}>
-        <h1 style={{ fontSize: 22, marginBottom: 4 }}>Entrar no time</h1>
-        <p className="muted" style={{ fontSize: 14, marginBottom: 24 }}>
+    <main className="auth-shell">
+      <section className="auth-visual">
+        <div className="flex items-center gap-3">
+          <BrandMark className="size-11 !bg-white !text-accent" />
+          <span className="text-lg font-bold tracking-tight">Farm</span>
+        </div>
+        <div className="max-w-xl">
+          <p className="mb-4 text-xs font-bold uppercase tracking-[0.14em] text-white/60">Bem-vindo ao time</p>
+          <h1 className="text-[clamp(2.4rem,4.3vw,4.5rem)] font-semibold leading-[1] tracking-[-0.05em]">
+            Menos preenchimento. Mais tempo com o produtor.
+          </h1>
+          <p className="mt-6 max-w-md text-base leading-relaxed text-white/70">
+            O Farm transforma suas conversas em contexto e próximos passos para toda a equipe.
+          </p>
+        </div>
+        <p className="text-xs text-white/45">Sua carteira continua sendo sua.</p>
+      </section>
+
+      <section className="auth-panel">
+        <div className="auth-form">
+          <div className="mb-8 md:hidden"><BrandMark /></div>
+          <p className="eyebrow mb-2">Convite da revenda</p>
+          <h2 className="text-3xl font-semibold tracking-[-0.04em]">Crie seu acesso</h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted">
           {tokenFromLink
             ? 'Defina seu nome e senha para aceitar o convite.'
             : 'Cole o link ou o token do convite e defina a senha.'}
-        </p>
-        <form onSubmit={onSubmit} style={{ display: 'grid', gap: 16 }}>
+          </p>
+          <form onSubmit={onSubmit} className="mt-8 grid gap-5">
           {!tokenFromLink ? (
             <div>
               <label className="label" htmlFor="token">Token do convite</label>
@@ -96,19 +109,22 @@ function AcceptInviteForm() {
               required
             />
           </div>
-          {error && <p className="error" style={{ fontSize: 14 }}>{error}</p>}
-          <button className="btn" type="submit" disabled={busy || !token.trim()}>
-            {busy ? 'Entrando…' : 'Aceitar convite'}
-          </button>
-        </form>
-      </div>
+            {error && <p className="rounded-control border border-danger/20 bg-danger/5 px-3 py-2.5 text-sm text-danger">{error}</p>}
+            <button className="btn mt-1 w-full" type="submit" disabled={busy || !token.trim()}>
+              {busy ? 'Criando acesso…' : 'Entrar para o time'}
+              {!busy && <Icon name="arrow" />}
+            </button>
+          </form>
+          <p className="mt-7 text-center text-xs text-faint">Ao continuar, você entra no ambiente privado da sua revenda.</p>
+        </div>
+      </section>
     </main>
   );
 }
 
 export default function AcceptInvitePage() {
   return (
-    <Suspense fallback={<main style={{ padding: 24 }}><p className="muted">Carregando…</p></main>}>
+    <Suspense fallback={<main className="grid min-h-dvh place-items-center"><p className="muted">Preparando convite…</p></main>}>
       <AcceptInviteForm />
     </Suspense>
   );

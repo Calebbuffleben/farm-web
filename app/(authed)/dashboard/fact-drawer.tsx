@@ -94,11 +94,12 @@ export function FactDrawer({
       </div>
       {isAlcada && (
         <div className="mt-5 grid gap-2 border-t border-border pt-4">
-          <label className="text-xs font-semibold text-muted">
+          <label htmlFor="discount-reply" className="text-xs font-semibold text-muted">
             Autorizar resposta
             {detail.channelKind === 'VOICE' ? ' · canal de voz (não envia texto)' : ''}
           </label>
           <textarea
+            id="discount-reply"
             value={replyText}
             onChange={(e) => setReplyText(e.target.value)}
             maxLength={500}

@@ -20,7 +20,7 @@ import {
 } from '@/lib/wa-session-api';
 import { useAudioRecorder } from '@/lib/use-audio-recorder';
 import { useTwilioDevice } from '@/lib/use-twilio-device';
-import { Chip, cx, KIND_LABEL, StageChip, TempDot } from '@/components/ui';
+import { Chip, cx, Icon, KIND_LABEL, StageChip, TempDot } from '@/components/ui';
 import { DealCardBoard } from './deal-card';
 
 const POLL_MS = 5000;
@@ -34,6 +34,7 @@ export default function InboxPage() {
   const [listError, setListError] = useState<string | null>(null);
   const [me, setMe] = useState<Me | null>(null);
   const [session, setSession] = useState<WaSessionState | null>(null);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -76,9 +77,27 @@ export default function InboxPage() {
   }, [refresh]);
 
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
+  const visibleConversations = conversations.filter((c) => {
+    const term = search.trim().toLocaleLowerCase('pt-BR');
+    if (!term) return true;
+    return [c.producer?.name, c.producerPhone, previewOf(c)]
+      .filter(Boolean)
+      .some((value) => value!.toLocaleLowerCase('pt-BR').includes(term));
+  });
 
   return (
-    <>
+    <div className="grid gap-4">
+      <header className={cx('flex items-start justify-between gap-4', selected && 'hidden md:flex')}>
+        <div>
+          <div className="eyebrow mb-2">Relacionamento</div>
+          <h1 className="page-title">Conversas</h1>
+          <p className="mt-1.5 text-sm text-muted">Atendimento do time e contexto comercial em um só lugar.</p>
+        </div>
+        <div className="hidden items-center gap-2 rounded-full border border-border bg-surface px-3 py-2 text-xs text-muted sm:flex">
+          <span className={cx('size-2 rounded-full', session?.status === 'ACTIVE' ? 'bg-accent' : 'bg-cold')} />
+          WhatsApp {session?.status === 'ACTIVE' ? 'conectado' : 'não conectado'}
+        </div>
+      </header>
       {sessionDropped && (
         <Banner tone="error">
           Seu WhatsApp desconectou — nada chega ao Inbox e nenhum relatório sai até reconectar.{' '}
@@ -97,11 +116,7 @@ export default function InboxPage() {
         </Banner>
       )}
       <div
-        className={cx(
-          'grid gap-4',
-          selected ? 'grid-cols-1 md:grid-cols-[minmax(280px,360px)_1fr]' : 'grid-cols-1',
-        )}
-        style={{ height: 'calc(100dvh - 104px)' }}
+        className="grid min-h-0 gap-4 md:h-[calc(100dvh-12.5rem)] md:grid-cols-[minmax(280px,360px)_1fr]"
       >
         <aside
           className={cx(
@@ -109,9 +124,17 @@ export default function InboxPage() {
             selected && 'hidden md:flex',
           )}
         >
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <strong className="text-sm">Conversas</strong>
-            <span className="text-[11px] text-faint">{conversations.length}</span>
+          <div className="border-b border-border p-3">
+            <div className="relative">
+              <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="input !min-h-9 !bg-surface-2 !py-1.5 !pl-9 text-sm"
+                placeholder="Buscar produtor ou mensagem"
+                aria-label="Buscar conversas"
+              />
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto">
             {!loaded && <p className="muted p-4 text-sm">Carregando…</p>}
@@ -119,7 +142,13 @@ export default function InboxPage() {
             {loaded && !listError && conversations.length === 0 && (
               <EmptyList sessionActive={session?.status === 'ACTIVE'} isAdmin={isAdmin} />
             )}
-            {conversations.map((c) => (
+            {loaded && !listError && conversations.length > 0 && visibleConversations.length === 0 && (
+              <div className="grid place-items-center px-6 py-12 text-center">
+                <p className="text-sm font-medium">Nenhuma conversa encontrada</p>
+                <p className="mt-1 text-xs text-muted">Tente buscar por outro nome ou termo.</p>
+              </div>
+            )}
+            {visibleConversations.map((c) => (
               <ConversationRow
                 key={c.id}
                 conversation={c}
@@ -143,8 +172,21 @@ export default function InboxPage() {
             onChanged={refresh}
           />
         )}
+        {!selected && (
+          <section className="card hidden min-h-0 place-items-center overflow-hidden !p-0 md:grid">
+            <div className="max-w-sm px-8 text-center">
+              <div className="mx-auto mb-5 grid size-14 place-items-center rounded-2xl bg-accent/10 text-accent">
+                <Icon name="inbox" className="size-6" />
+              </div>
+              <h2 className="text-lg font-semibold tracking-tight">Selecione uma conversa</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                Abra um relacionamento para ver o histórico, o resumo da IA e o próximo passo recomendado.
+              </p>
+            </div>
+          </section>
+        )}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -201,20 +243,21 @@ function ConversationRow({
       )}
     >
       <div className="flex items-center gap-2">
-        {brief ? (
-          <TempDot temperature={brief.temperature} />
-        ) : (
-          <span className="inline-block size-2 rounded-full bg-surface-3" />
-        )}
+        <div className="relative grid size-9 shrink-0 place-items-center rounded-full bg-surface-3 text-xs font-bold uppercase text-muted">
+          {(c.producer?.name ?? c.producerPhone).slice(0, 2)}
+          <span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-surface">
+            {brief ? <TempDot temperature={brief.temperature} /> : <span className="block size-2 rounded-full bg-cold" />}
+          </span>
+        </div>
         <strong className="truncate text-sm">{c.producer?.name ?? c.producerPhone}</strong>
         <span className="ml-auto flex items-center gap-2 whitespace-nowrap text-xs text-muted">
           <ChannelBadge kind={c.channelKind} />
           {c.lastMessageAt ? formatTime(c.lastMessageAt) : ''}
         </span>
       </div>
-      <div className="mt-0.5 truncate pl-4 text-[13px] text-muted">{previewOf(c)}</div>
+      <div className="mt-0.5 truncate pl-11 text-[13px] text-muted">{previewOf(c)}</div>
       {brief && brief.stage !== 'SEM_NEGOCIO' && (
-        <div className="mt-1.5 flex items-center gap-1.5 pl-4">
+        <div className="mt-1.5 flex items-center gap-1.5 pl-11">
           <StageChip stage={brief.stage} />
           {brief.analysisQuality !== 'COMPLETE' && (
             <Chip tone="warning">
@@ -442,14 +485,14 @@ function ChatPane({
   }
 
   return (
-    <section className="card flex min-h-0 flex-col overflow-hidden !p-0">
-      <header className="flex items-center gap-3 border-b border-border px-4 py-3">
+    <section className="card flex min-h-[70dvh] flex-col overflow-hidden !p-0 md:min-h-0">
+      <header className="flex items-center gap-3 border-b border-border px-4 py-3.5">
         <button
           onClick={onClose}
           className="text-lg text-muted hover:text-text"
           aria-label="Fechar conversa"
         >
-          ←
+          <span aria-hidden>←</span>
         </button>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -475,14 +518,14 @@ function ChatPane({
         }
       />
 
-      <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-4">
+      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto bg-surface-2/35 p-4">
         {messages.map((m) => (
           <MessageBubble key={m.id} message={m} highlight={m.id === highlightMessageId} />
         ))}
         <div ref={bottomRef} />
       </div>
 
-      <footer className="border-t border-border p-3">
+      <footer className="border-t border-border bg-surface p-3">
         {sendError && <p className="error mb-2 text-[13px]">{sendError}</p>}
         {isVoice ? (
           <div>
@@ -547,6 +590,7 @@ function ChatPane({
                   <input
                     className="input"
                     placeholder="Assunto"
+                    aria-label="Assunto do e-mail"
                     value={subjectDraft}
                     onChange={(e) => setSubjectDraft(e.target.value)}
                     disabled={sending}
@@ -556,6 +600,7 @@ function ChatPane({
                   <input
                     className="input"
                     placeholder="Mensagem…"
+                    aria-label="Mensagem"
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     onKeyDown={(e) => {
@@ -583,7 +628,7 @@ function ChatPane({
                       disabled={sending}
                       aria-label="Gravar áudio"
                     >
-                      🎙
+                      <Icon name="mic" className="size-5" />
                     </button>
                   )}
                 </div>
@@ -604,8 +649,8 @@ function MessageBubble({ message, highlight }: { message: InboxMessage; highligh
       className={cx(
         'max-w-[78%] rounded-2xl border px-3 py-2',
         mine
-          ? 'self-end rounded-br-md border-accent/25 bg-accent/10'
-          : 'self-start rounded-bl-md border-border bg-surface-2',
+          ? 'self-end rounded-br-md border-accent/15 bg-accent text-accent-ink shadow-sm'
+          : 'self-start rounded-bl-md border-border bg-surface shadow-sm',
         highlight && 'ring-2 ring-accent',
       )}
     >
@@ -617,7 +662,7 @@ function MessageBubble({ message, highlight }: { message: InboxMessage; highligh
           {message.mediaStatus === 'PENDING_MEDIA' && ' — baixando…'}
         </p>
       )}
-      <span className="mt-1 block text-right text-[11px] text-faint">
+      <span className={cx('mt-1 block text-right text-[11px]', mine ? 'text-white/65' : 'text-faint')}>
         {new Date(message.sentAt).toLocaleTimeString('pt-BR', {
           hour: '2-digit',
           minute: '2-digit',

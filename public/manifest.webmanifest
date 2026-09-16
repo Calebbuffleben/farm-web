@@ -3,8 +3,8 @@
   "short_name": "Farm",
   "start_url": "/inbox",
   "display": "standalone",
-  "background_color": "#0f1a14",
-  "theme_color": "#0f1a14",
-  "description": "Inbox corporativo do RTV e dashboard da revenda",
+  "background_color": "#f4f6f2",
+  "theme_color": "#166534",
+  "description": "Inteligência comercial para revendas agrícolas",
   "icons": []
 }
