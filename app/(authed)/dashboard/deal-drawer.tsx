@@ -63,6 +63,13 @@ export function DealDrawer({
       {!deal && !error && <p className="muted text-sm">Carregando…</p>}
       {deal && (
         <div className="grid gap-4">
+          {deal.analysisQuality !== 'COMPLETE' && (
+            <p className="rounded-control border border-warning/40 bg-warning/10 p-3 text-sm text-warning">
+              {deal.analysisQuality === 'STALE'
+                ? 'A última análise falhou; este brief preserva a orientação anterior.'
+                : 'Análise parcial. Valide a conversa antes de orientar o RTV.'}
+            </p>
+          )}
           <p className="text-[13px] text-muted">
             {[deal.farmNames.join(', ') || null, deal.rtvName ? `RTV ${deal.rtvName}` : null]
               .filter(Boolean)
@@ -81,13 +88,29 @@ export function DealDrawer({
                   até {new Date(deal.nextActionDueAt).toLocaleDateString('pt-BR')}
                 </span>
               )}
+              {!deal.nextActionDueAt && deal.nextActionDueHint && (
+                <span className="text-[11px] font-normal normal-case tracking-normal text-muted">
+                  {deal.nextActionDueHint}
+                </span>
+              )}
             </div>
             <p className="text-[15px] font-medium leading-snug">{deal.nextAction}</p>
+            <p className="mt-1.5 text-xs text-muted">
+              Responsável: {deal.nextActionOwner === 'MANAGER' ? 'gerente' : 'RTV'}
+              {deal.nextActionReason ? ` · ${deal.nextActionReason}` : ''}
+            </p>
           </section>
 
           {/* 3 pilares */}
           <section className="grid gap-3 sm:grid-cols-3">
-            <Pillar title="Contexto">{deal.contextSummary}</Pillar>
+            <Pillar title="Situação">
+              {deal.contextSummary}
+              {deal.dealChange && (
+                <p className="mt-2 text-xs text-accent">
+                  <span className="font-semibold">Mudou agora:</span> {deal.dealChange}
+                </p>
+              )}
+            </Pillar>
             <Pillar title="Intenção · Urgência">
               <div className="flex flex-wrap gap-1.5">
                 <Chip tone={deal.intent === 'ALTA' ? 'accent' : 'neutral'}>
@@ -101,7 +124,8 @@ export function DealDrawer({
                 <p className="mt-2 text-xs text-muted">{deal.products.join(', ')}</p>
               )}
             </Pillar>
-            <Pillar title="Dor / objeção">
+            <Pillar title="Posição · Dor">
+              {deal.producerPosition && <p className="mb-2">{deal.producerPosition}</p>}
               {deal.painPoint ?? <span className="text-faint">Nenhuma identificada</span>}
               {deal.blockerSubtype && (
                 <div className="mt-2">
@@ -110,6 +134,37 @@ export function DealDrawer({
               )}
             </Pillar>
           </section>
+
+          {deal.managerGuidance && (
+            <section className="rounded-card border border-warning/40 bg-warning/10 p-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-warning">
+                Intervenção do gerente
+              </h3>
+              <p className="mt-1 text-sm">{deal.managerGuidance}</p>
+            </section>
+          )}
+
+          {deal.criticalFacts.length > 0 && (
+            <section>
+              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-danger">
+                Riscos críticos
+              </h3>
+              <ul className="list-disc pl-5 text-sm text-muted">
+                {deal.criticalFacts.map((headline) => (
+                  <li key={headline}>{headline}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {deal.suggestedReply && (
+            <section className="rounded-card border border-border bg-surface-2 p-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
+                Resposta sugerida ao RTV
+              </h3>
+              <p className="mt-1 text-sm">“{deal.suggestedReply}”</p>
+            </section>
+          )}
 
           {deal.moneyHints.length > 0 && (
             <p className="text-xs text-muted">
@@ -173,6 +228,9 @@ export function FactRow({ fact, onOpen }: { fact: FactCard; onOpen: () => void }
           <span>{fact.subtype}</span>
           {fact.farmName && <span>· {fact.farmName}</span>}
           {fact.moneyHint && <span>· {fact.moneyHint}</span>}
+          {fact.confidence !== undefined && (
+            <span>· IA {Math.round(fact.confidence * 100)}%</span>
+          )}
           <span className="ml-auto">{relativeTime(fact.occurredAt)}</span>
         </div>
         <p className="mt-1 text-sm font-medium leading-snug">{fact.headline}</p>

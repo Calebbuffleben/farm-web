@@ -5,6 +5,7 @@ export interface FactCard {
   kind: string;
   subtype: string;
   severity: string;
+  confidence?: number;
   headline: string;
   moneyHint: string | null;
   dueHintText: string | null;
@@ -69,14 +70,23 @@ export interface DealCard {
   intent: DealLevel;
   urgency: DealLevel;
   contextSummary: string;
+  producerPosition: string | null;
+  dealChange: string | null;
   painPoint: string | null;
   nextAction: string;
+  nextActionReason: string | null;
+  nextActionOwner: 'RTV' | 'MANAGER';
   nextActionKind: string;
+  nextActionDueHint: string | null;
   nextActionDueAt: string | null;
+  suggestedReply: string | null;
+  managerGuidance: string | null;
+  analysisQuality: 'COMPLETE' | 'PARTIAL' | 'STALE';
   blockerSubtype: string | null;
   products: string[];
   /** Pistas de valor em texto — R$ só com ERP. */
   moneyHints: string[];
+  criticalFacts: string[];
   lastMessageAt: string | null;
   lastDirection: 'IN' | 'OUT' | null;
   unanswered: boolean;
@@ -88,7 +98,8 @@ export type AttentionReason =
   | 'cooling_late_stage'
   | 'unanswered'
   | 'next_action_overdue'
-  | 'followup_overdue';
+  | 'followup_overdue'
+  | 'manager_escalation';
 
 export interface AttentionItem extends DealCard {
   reasons: AttentionReason[];

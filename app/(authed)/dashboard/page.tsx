@@ -41,6 +41,7 @@ const REASON_LABEL: Record<AttentionReason, string> = {
   unanswered: 'produtor sem resposta',
   next_action_overdue: 'próximo passo vencido',
   followup_overdue: 'follow-up atrasado',
+  manager_escalation: 'decisão do gerente',
 };
 
 /**
@@ -224,6 +225,16 @@ function AttentionRow({ item, onOpen }: { item: AttentionItem; onOpen: () => voi
           <p>
             <span className="font-medium text-accent">Próximo passo:</span> {item.nextAction}
           </p>
+          {item.managerGuidance && (
+            <p className="text-warning sm:col-span-2">
+              <span className="font-medium">Gerente:</span> {item.managerGuidance}
+            </p>
+          )}
+          {item.criticalFacts.length > 0 && (
+            <p className="text-danger sm:col-span-2">
+              <span className="font-medium">Risco crítico:</span> {item.criticalFacts[0]}
+            </p>
+          )}
         </div>
         <div className="mt-1.5 text-[11px] text-faint">
           {item.rtvName ? `RTV ${item.rtvName}` : 'Sem RTV'} · último contato{' '}

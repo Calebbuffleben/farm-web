@@ -80,10 +80,29 @@ export function DealCardBoard({
       {!collapsed && (
         <div className="grid gap-3 px-4 pb-3 md:grid-cols-[1.2fr_1fr]">
           <div className="grid gap-2 text-[13px]">
+            {brief.analysisQuality !== 'COMPLETE' && (
+              <p className="rounded-control border border-warning/40 bg-warning/10 px-2.5 py-2 text-xs text-warning">
+                {brief.analysisQuality === 'STALE'
+                  ? 'Brief anterior preservado: a análise da última mensagem não foi concluída.'
+                  : 'Análise parcial: use a mensagem destacada como base e revise antes de responder.'}
+              </p>
+            )}
             <p>
-              <span className="font-semibold text-muted">Resumo: </span>
+              <span className="font-semibold text-muted">Situação: </span>
               {brief.contextSummary}
             </p>
+            {brief.producerPosition && (
+              <p>
+                <span className="font-semibold text-muted">Posição do produtor: </span>
+                {brief.producerPosition}
+              </p>
+            )}
+            {brief.dealChange && (
+              <p>
+                <span className="font-semibold text-muted">Mudou agora: </span>
+                {brief.dealChange}
+              </p>
+            )}
             {brief.painPoint && (
               <p>
                 <span className="font-semibold text-muted">Dor: </span>
@@ -111,8 +130,35 @@ export function DealCardBoard({
                   até {new Date(brief.nextActionDueAt).toLocaleDateString('pt-BR')}
                 </span>
               )}
+              {!brief.nextActionDueAt && brief.nextActionDueHint && (
+                <span className="font-normal normal-case tracking-normal text-muted">
+                  {brief.nextActionDueHint}
+                </span>
+              )}
             </div>
             <p className="text-sm font-medium leading-snug">{brief.nextAction}</p>
+            <p className="mt-1 text-xs text-muted">
+              Responsável: {brief.nextActionOwner === 'MANAGER' ? 'gerente' : 'RTV'}
+              {brief.nextActionReason ? ` · ${brief.nextActionReason}` : ''}
+            </p>
+            {brief.managerGuidance && (
+              <p className="mt-2 rounded-control border border-warning/30 bg-warning/10 p-2 text-xs">
+                <span className="font-semibold">Apoio do gerente: </span>
+                {brief.managerGuidance}
+              </p>
+            )}
+            {brief.suggestedReply && brief.analysisQuality === 'COMPLETE' && (
+              <div className="mt-2 border-t border-accent/20 pt-2">
+                <p className="text-xs text-muted">Resposta sugerida: “{brief.suggestedReply}”</p>
+                <button
+                  type="button"
+                  className="mt-1 text-xs font-semibold text-accent hover:underline"
+                  onClick={() => void navigator.clipboard?.writeText(brief.suggestedReply ?? '')}
+                >
+                  Copiar resposta
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -7,6 +7,7 @@ export interface DealBriefSummary {
   temperature: DealTemperature;
   nextAction: string;
   nextActionKind: string;
+  analysisQuality: 'COMPLETE' | 'PARTIAL' | 'STALE';
   updatedAt: string;
 }
 
@@ -14,10 +15,17 @@ export interface DealBriefSummary {
 export interface DealBrief extends DealBriefSummary {
   stageConfidence: number;
   contextSummary: string;
+  producerPosition: string | null;
+  dealChange: string | null;
   intent: DealLevel;
   urgency: DealLevel;
   painPoint: string | null;
+  nextActionReason: string | null;
+  nextActionOwner: 'RTV' | 'MANAGER';
+  nextActionDueHint: string | null;
   nextActionDueAt: string | null;
+  suggestedReply: string | null;
+  managerGuidance: string | null;
   blockerSubtype: string | null;
   products: string[];
   evidenceMessageId: string;

@@ -20,7 +20,7 @@ import {
 } from '@/lib/wa-session-api';
 import { useAudioRecorder } from '@/lib/use-audio-recorder';
 import { useTwilioDevice } from '@/lib/use-twilio-device';
-import { cx, KIND_LABEL, StageChip, TempDot } from '@/components/ui';
+import { Chip, cx, KIND_LABEL, StageChip, TempDot } from '@/components/ui';
 import { DealCardBoard } from './deal-card';
 
 const POLL_MS = 5000;
@@ -216,6 +216,11 @@ function ConversationRow({
       {brief && brief.stage !== 'SEM_NEGOCIO' && (
         <div className="mt-1.5 flex items-center gap-1.5 pl-4">
           <StageChip stage={brief.stage} />
+          {brief.analysisQuality !== 'COMPLETE' && (
+            <Chip tone="warning">
+              {brief.analysisQuality === 'STALE' ? 'desatualizado' : 'revisar'}
+            </Chip>
+          )}
           <span className="truncate text-[11px] text-faint">
             <span className="text-accent">{KIND_LABEL[brief.nextActionKind] ?? 'Próximo'}:</span>{' '}
             {brief.nextAction}
