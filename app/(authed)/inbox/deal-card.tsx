@@ -54,7 +54,7 @@ export function DealCardBoard({
       analysis === 'blocked'
         ? 'Análise bloqueada pelo consentimento deste produtor.'
         : hasProducerMessage || analysis === 'pending'
-          ? 'Mensagem do produtor recebida. A análise ainda não gravou o Card de Bordo — o worker de inteligência precisa estar no ar com Gemini.'
+          ? 'Mensagem recebida. A IA ainda não gravou o Card de Bordo — o worker precisa consumir a fila e POST /analysis.'
           : 'Aguardando a primeira mensagem do produtor para montar o Card de Bordo.';
     return (
       <div className="border-b border-border bg-surface-2/60 px-4 py-2 text-xs text-faint">
