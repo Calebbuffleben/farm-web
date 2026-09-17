@@ -92,9 +92,9 @@ export default function DashboardPage() {
             <span className="h-px w-8 bg-copper" />
             Inteligência comercial
           </div>
-          <h1 className="page-title">O que pede sua atenção agora</h1>
+          <h1 className="page-title">Posição da carteira</h1>
           <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted">
-            Prioridades, movimento da carteira e o próximo passo — extraídos das conversas, sem planilha.
+            Exposição, atrasos e o próximo passo — extraídos das conversas, sem planilha.
           </p>
         </div>
         <div className="flex flex-col items-start gap-2 lg:items-end">

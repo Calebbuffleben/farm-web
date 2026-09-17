@@ -69,7 +69,7 @@ export function BrandMark({
     <span
       className={cx(
         'relative grid shrink-0 place-items-center overflow-hidden',
-        inverted ? 'rounded-xl bg-accent text-accent-ink' : 'rounded-xl bg-accent text-accent-ink',
+        inverted ? 'rounded-lg bg-white text-accent' : 'rounded-lg bg-accent text-accent-ink',
         className,
       )}
     >
@@ -311,7 +311,7 @@ export function TempDot({
         className={cx(
           'inline-block size-2 rounded-full',
           TEMP_BG[temperature],
-          temperature === 'HOT' && 'shadow-[0_0_0_3px_rgba(255,122,89,0.28)]',
+          temperature === 'HOT' && 'shadow-[0_0_0_3px_rgba(225,29,72,0.2)]',
         )}
       />
       {withLabel && <span className="font-medium">{TEMP_LABEL[temperature]}</span>}
@@ -453,7 +453,7 @@ export function Drawer({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/55 backdrop-blur-[3px]" onClick={onClose} aria-hidden />
+      <div className="absolute inset-0 bg-[#0b1220]/40 backdrop-blur-[2px]" onClick={onClose} aria-hidden />
       <aside
         ref={dialogRef}
         role="dialog"

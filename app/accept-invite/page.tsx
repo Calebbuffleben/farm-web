@@ -54,15 +54,15 @@ function AcceptInviteForm() {
           <span className="font-display text-[28px] leading-none tracking-[-0.04em]">Farm</span>
         </div>
         <div className="relative z-10 max-w-xl">
-          <p className="eyebrow mb-5">Bem-vindo ao time</p>
-          <h1 className="font-display text-[clamp(2.4rem,4.6vw,4.6rem)] font-bold leading-[0.94] tracking-[-0.05em]">
-            Menos preenchimento. Mais tempo com o produtor.
+          <p className="eyebrow mb-5 !text-white/70">Convite da revenda</p>
+          <h1 className="font-display text-[clamp(2.2rem,4.2vw,4rem)] font-semibold leading-[1.08] tracking-[-0.03em]">
+            Sua carteira, com a mesma clareza do time.
           </h1>
-          <p className="mt-7 max-w-md text-[17px] leading-relaxed text-muted">
-            O Farm transforma suas conversas em contexto e próximos passos para toda a equipe.
+          <p className="mt-7 max-w-md text-[17px] leading-relaxed text-white/70">
+            O Farm transforma conversas em contexto e próximo passo — sem formulário extra.
           </p>
         </div>
-        <p className="relative z-10 font-mono text-[11px] uppercase tracking-[0.16em] text-faint">
+        <p className="relative z-10 font-mono text-[11px] uppercase tracking-[0.16em] text-white/40">
           Sua carteira continua sendo sua
         </p>
       </section>

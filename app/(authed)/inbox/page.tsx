@@ -521,7 +521,7 @@ function ChatPane({
         }
       />
 
-      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto bg-[rgba(42,70,50,0.04)] p-4">
+      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto bg-[#f7f9fc] p-4">
         {messages.map((m) => (
           <MessageBubble key={m.id} message={m} highlight={m.id === highlightMessageId} />
         ))}

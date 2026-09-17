@@ -1,24 +1,27 @@
 import type { Metadata, Viewport } from 'next';
-import { JetBrains_Mono, Sora, Syne } from 'next/font/google';
+import { IBM_Plex_Mono, IBM_Plex_Sans, IBM_Plex_Serif } from 'next/font/google';
 import './globals.css';
 import { SwRegister } from './sw-register';
 
-const sora = Sora({
-  subsets: ['latin'],
+const plexSans = IBM_Plex_Sans({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500', '600', '700'],
   display: 'swap',
-  variable: '--font-sora',
+  variable: '--font-plex-sans',
 });
 
-const syne = Syne({
-  subsets: ['latin'],
+const plexSerif = IBM_Plex_Serif({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['500', '600'],
   display: 'swap',
-  variable: '--font-syne',
+  variable: '--font-plex-serif',
 });
 
-const jetbrains = JetBrains_Mono({
+const plexMono = IBM_Plex_Mono({
   subsets: ['latin'],
+  weight: ['400', '500'],
   display: 'swap',
-  variable: '--font-jetbrains',
+  variable: '--font-plex-mono',
 });
 
 export const metadata: Metadata = {
@@ -29,15 +32,15 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#070b10',
+  themeColor: '#f4f6f8',
   width: 'device-width',
   initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${sora.variable} ${syne.variable} ${jetbrains.variable}`}>
-      <body className={sora.className}>
+    <html lang="pt-BR" className={`${plexSans.variable} ${plexSerif.variable} ${plexMono.variable}`}>
+      <body className={plexSans.className}>
         <SwRegister />
         {children}
       </body>

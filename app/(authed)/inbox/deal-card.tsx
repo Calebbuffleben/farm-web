@@ -66,7 +66,7 @@ export function DealCardBoard({
   }
 
   return (
-    <div className="border-b border-border bg-[linear-gradient(90deg,rgba(62,224,197,0.1),transparent_55%)]">
+    <div className="border-b border-border bg-[#f5f8ff]">
       <button
         onClick={() => setCollapsed((v) => !v)}
         className="flex w-full items-center gap-2 px-4 py-2.5 text-left"

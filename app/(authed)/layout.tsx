@@ -71,9 +71,9 @@ export default function AuthedLayout({ children }: { children: React.ReactNode }
         <Link href={me?.membership.role === 'MEMBER' ? '/inbox' : '/dashboard'} className="flex items-center gap-3 px-1 py-1">
           <BrandMark inverted />
           <div>
-            <div className="font-display text-[22px] font-bold leading-none tracking-[-0.05em] text-text">Farm</div>
-            <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
-              Operação
+            <div className="font-display text-[22px] font-semibold leading-none tracking-[-0.03em] text-text">Farm</div>
+            <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">
+              Control
             </div>
           </div>
         </Link>
@@ -90,10 +90,10 @@ export default function AuthedLayout({ children }: { children: React.ReactNode }
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cx(
-                  'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-semibold transition',
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-medium transition',
                   active
-                    ? 'bg-accent text-accent-ink shadow-[0_8px_24px_rgba(62,224,197,0.18)]'
-                    : 'text-muted hover:bg-white/5 hover:text-text',
+                    ? 'bg-[#eef4ff] text-accent'
+                    : 'text-muted hover:bg-surface-2 hover:text-text',
                 )}
               >
                 <Icon name={item.icon} className="size-[18px]" />
@@ -104,13 +104,13 @@ export default function AuthedLayout({ children }: { children: React.ReactNode }
         </nav>
 
         <p className="mx-3 mt-8 hidden text-[12px] leading-relaxed text-faint xl:block">
-          Temperatura da carteira, gargalos e o próximo passo — sem planilha.
+          Saldos da carteira: o que está em risco, o que esfria e o próximo passo.
         </p>
 
         {me && (
-          <div className="mt-auto border-t border-white/10 pt-4">
+          <div className="mt-auto border-t border-border pt-4">
             <div className="flex items-center gap-2.5 px-1">
-              <div className="grid size-9 shrink-0 place-items-center rounded-full bg-accent/15 text-[11px] font-bold uppercase tracking-wide text-accent">
+              <div className="grid size-9 shrink-0 place-items-center rounded-full bg-[#eef4ff] text-[11px] font-bold uppercase tracking-wide text-accent">
                 {(me.user.name ?? me.user.email).slice(0, 2)}
               </div>
               <div className="min-w-0">
@@ -123,7 +123,7 @@ export default function AuthedLayout({ children }: { children: React.ReactNode }
               </div>
               <button
                 onClick={onLogout}
-                className="ml-auto grid size-8 shrink-0 place-items-center rounded-lg text-muted transition hover:bg-white/10 hover:text-text"
+                className="ml-auto grid size-8 shrink-0 place-items-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-text"
                 title="Sair"
                 aria-label="Sair"
               >
@@ -153,7 +153,7 @@ export default function AuthedLayout({ children }: { children: React.ReactNode }
 
       <nav
         className={cx(
-          'fixed inset-x-3 bottom-3 z-50 grid rounded-2xl border border-border bg-surface/95 p-1.5 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-md md:hidden',
+          'fixed inset-x-3 bottom-3 z-50 grid rounded-2xl border border-border bg-surface/95 p-1.5 shadow-[0_16px_40px_rgba(15,23,42,0.12)] backdrop-blur-md md:hidden',
           navItems.length === 2 ? 'grid-cols-2' : 'grid-cols-3',
         )}
       >
