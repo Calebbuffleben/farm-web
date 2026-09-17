@@ -45,20 +45,20 @@ export default function LoginPage() {
           <BrandMark inverted className="size-11" />
           <div>
             <div className="font-display text-[28px] leading-none tracking-[-0.04em]">Farm</div>
-            <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/55">Control</div>
+            <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/55">Intelligence</div>
           </div>
         </div>
         <div className="relative z-10 max-w-xl">
-          <div className="eyebrow mb-6 !text-white/70">Posição da carteira</div>
+          <div className="eyebrow mb-6 !text-white/70">Inteligência que nasce das conversas</div>
           <h1 className="font-display text-[clamp(2.4rem,4.6vw,4.4rem)] font-semibold leading-[1.05] tracking-[-0.03em]">
-            Clareza de saldo. Decisão no tempo certo.
+            Sua operação comercial, em foco.
           </h1>
           <p className="mt-7 max-w-lg text-[17px] leading-relaxed text-white/70">
-            Veja o que está em risco, o que esfria e o próximo passo — sem pedir planilha ao time.
+            Saiba onde agir, quem apoiar e quais negócios estão mudando — sem pedir mais uma planilha ao time.
           </p>
         </div>
         <p className="relative z-10 font-mono text-[11px] uppercase tracking-[0.16em] text-white/40">
-          Decisões melhores · Relacionamentos mais fortes
+          Decisões melhores. Relacionamentos mais fortes.
         </p>
       </section>
 
@@ -68,8 +68,8 @@ export default function LoginPage() {
             <BrandMark />
           </div>
           <p className="eyebrow mb-2">Acesso seguro</p>
-          <h2 className="font-display text-[2.05rem] font-semibold leading-none tracking-[-0.03em]">Acesse sua conta</h2>
-          <p className="mt-2 text-sm text-muted">Ambiente isolado da sua revenda.</p>
+          <h2 className="font-display text-[2.05rem] font-semibold leading-none tracking-[-0.03em]">Bem-vindo de volta</h2>
+          <p className="mt-2 text-sm text-muted">Entre para acompanhar sua operação comercial.</p>
           <form onSubmit={onSubmit} className="mt-8 grid gap-5">
             <div>
             <label className="label" htmlFor="email">

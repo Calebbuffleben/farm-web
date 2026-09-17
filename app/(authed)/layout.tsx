@@ -73,7 +73,7 @@ export default function AuthedLayout({ children }: { children: React.ReactNode }
           <div>
             <div className="font-display text-[22px] font-semibold leading-none tracking-[-0.03em] text-text">Farm</div>
             <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">
-              Control
+              Intelligence
             </div>
           </div>
         </Link>
@@ -102,10 +102,6 @@ export default function AuthedLayout({ children }: { children: React.ReactNode }
             );
           })}
         </nav>
-
-        <p className="mx-3 mt-8 hidden text-[12px] leading-relaxed text-faint xl:block">
-          Saldos da carteira: o que está em risco, o que esfria e o próximo passo.
-        </p>
 
         {me && (
           <div className="mt-auto border-t border-border pt-4">

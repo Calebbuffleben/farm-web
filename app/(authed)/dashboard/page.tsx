@@ -79,7 +79,7 @@ export default function DashboardPage() {
   if (forbidden) {
     return (
       <p className="muted">
-        O Centro de Comando é para o gestor. O time de campo usa Conversas.
+        O Centro de Comando é para o gestor (OWNER, ADMIN ou MANAGER). O RTV usa o Inbox.
       </p>
     );
   }
@@ -92,9 +92,9 @@ export default function DashboardPage() {
             <span className="h-px w-8 bg-copper" />
             Inteligência comercial
           </div>
-          <h1 className="page-title">Posição da carteira</h1>
+          <h1 className="page-title">Visão executiva</h1>
           <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted">
-            Exposição, atrasos e o próximo passo — extraídos das conversas, sem planilha.
+            Prioridades, movimento da carteira e próximos passos extraídos das conversas do time.
           </p>
         </div>
         <div className="flex flex-col items-start gap-2 lg:items-end">
@@ -180,7 +180,7 @@ function Today({
   return (
     <section className="reveal-3 reveal">
       <SectionHeader
-        title="Fila do dia"
+        title="O que pede atenção"
         subtitle={`${s.deals} negócio${s.deals === 1 ? '' : 's'} em andamento · sinais dos últimos ${home.window.days} dias`}
       />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -197,7 +197,7 @@ function Today({
 
       <div className="mt-5">
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-[0.16em] text-copper">Prioridades</h3>
+          <h3 className="text-xs font-bold uppercase tracking-[0.16em] text-copper">Fila de prioridades</h3>
           {home.attention.length > 0 && <span className="text-xs text-faint">{home.attention.length} para revisar</span>}
         </div>
         {home.attention.length === 0 ? (
@@ -293,7 +293,7 @@ function Radar({
         empty={
           <Empty
             title="Sem negócios classificados ainda."
-            hint="O radar aparece assim que a primeira conversa for analisada."
+            hint="O radar aparece assim que o worker analisar a primeira conversa."
           />
         }
         columns={[
