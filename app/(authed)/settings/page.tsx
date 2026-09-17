@@ -102,18 +102,21 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto grid max-w-[1120px] gap-8">
-      <header className="flex flex-wrap items-start justify-between gap-4">
+      <header className="reveal flex flex-wrap items-end justify-between gap-4 border-b border-border pb-6">
         <div>
-          <div className="eyebrow mb-2">Administração</div>
+          <div className="eyebrow mb-3 flex items-center gap-2">
+            <span className="h-px w-8 bg-copper" />
+            Administração
+          </div>
           <h1 className="page-title">Configurações</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted">
           {forbidden
             ? 'Gerencie sua conexão, importações e vínculos pendentes.'
             : 'Equipe, regras comerciais, canais e governança da sua operação.'}
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-2 text-xs text-muted">
-          <span className="size-2 rounded-full bg-accent" />
+        <div className="flex items-center gap-2 border border-border bg-surface px-3 py-2 text-xs text-muted">
+          <span className="size-2 rounded-full bg-warm" />
           Ambiente da revenda
         </div>
       </header>
@@ -126,7 +129,7 @@ export default function SettingsPage() {
         </div>
       ) : (
         <div className="grid items-start gap-7 lg:grid-cols-[210px_minmax(0,1fr)]">
-          <aside className="sticky top-8 hidden rounded-card border border-border bg-surface p-2 shadow-sm lg:block">
+          <aside className="sticky top-8 hidden border border-border bg-surface p-2 lg:block">
             <p className="px-3 pb-2 pt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-faint">Nesta página</p>
             <SettingsLink href="#equipe" label="Equipe e estratégia" />
             <SettingsLink href="#canais" label="Canais de contato" />
@@ -199,7 +202,7 @@ function SettingsGroup({
     <section id={id} className="scroll-mt-8">
       <div className="mb-4">
         <p className="eyebrow mb-1.5">{eyebrow}</p>
-        <h2 className="text-xl font-semibold tracking-[-0.025em]">{title}</h2>
+        <h2 className="section-title">{title}</h2>
         <p className="mt-1 text-sm text-muted">{description}</p>
       </div>
       <div className="grid gap-4">{children}</div>

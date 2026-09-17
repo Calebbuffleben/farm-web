@@ -17,7 +17,7 @@ export default function Home() {
   }, [router]);
   return (
     <main className="grid min-h-dvh place-items-center">
-      <p className="text-sm text-muted">Preparando seu ambiente…</p>
+      <p className="font-display text-2xl tracking-[-0.03em] text-muted">Preparando seu ambiente…</p>
     </main>
   );
 }

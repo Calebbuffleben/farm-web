@@ -87,14 +87,17 @@ export default function InboxPage() {
 
   return (
     <div className="grid gap-4">
-      <header className={cx('flex items-start justify-between gap-4', selected && 'hidden md:flex')}>
+      <header className={cx('reveal flex items-start justify-between gap-4 border-b border-border pb-5', selected && 'hidden md:flex')}>
         <div>
-          <div className="eyebrow mb-2">Relacionamento</div>
+          <div className="eyebrow mb-3 flex items-center gap-2">
+            <span className="h-px w-8 bg-copper" />
+            Relacionamento
+          </div>
           <h1 className="page-title">Conversas</h1>
-          <p className="mt-1.5 text-sm text-muted">Atendimento do time e contexto comercial em um só lugar.</p>
+          <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">Atendimento do time e contexto comercial em um só lugar.</p>
         </div>
-        <div className="hidden items-center gap-2 rounded-full border border-border bg-surface px-3 py-2 text-xs text-muted sm:flex">
-          <span className={cx('size-2 rounded-full', session?.status === 'ACTIVE' ? 'bg-accent' : 'bg-cold')} />
+        <div className="hidden items-center gap-2 border border-border bg-surface px-3 py-2 text-xs text-muted sm:flex">
+          <span className={cx('size-2 rounded-full', session?.status === 'ACTIVE' ? 'bg-warm' : 'bg-cold')} />
           WhatsApp {session?.status === 'ACTIVE' ? 'conectado' : 'não conectado'}
         </div>
       </header>
@@ -175,10 +178,10 @@ export default function InboxPage() {
         {!selected && (
           <section className="card hidden min-h-0 place-items-center overflow-hidden !p-0 md:grid">
             <div className="max-w-sm px-8 text-center">
-              <div className="mx-auto mb-5 grid size-14 place-items-center rounded-2xl bg-accent/10 text-accent">
+              <div className="mx-auto mb-5 grid size-14 place-items-center bg-copper/12 text-copper">
                 <Icon name="inbox" className="size-6" />
               </div>
-              <h2 className="text-lg font-semibold tracking-tight">Selecione uma conversa</h2>
+              <h2 className="font-display text-[1.7rem] tracking-[-0.03em]">Selecione uma conversa</h2>
               <p className="mt-2 text-sm leading-relaxed text-muted">
                 Abra um relacionamento para ver o histórico, o resumo da IA e o próximo passo recomendado.
               </p>
@@ -243,7 +246,7 @@ function ConversationRow({
       )}
     >
       <div className="flex items-center gap-2">
-        <div className="relative grid size-9 shrink-0 place-items-center rounded-full bg-surface-3 text-xs font-bold uppercase text-muted">
+        <div className="relative grid size-9 shrink-0 place-items-center bg-surface-3 font-display text-sm uppercase text-ink">
           {(c.producer?.name ?? c.producerPhone).slice(0, 2)}
           <span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-surface">
             {brief ? <TempDot temperature={brief.temperature} /> : <span className="block size-2 rounded-full bg-cold" />}
@@ -265,7 +268,7 @@ function ConversationRow({
             </Chip>
           )}
           <span className="truncate text-[11px] text-faint">
-            <span className="text-accent">{KIND_LABEL[brief.nextActionKind] ?? 'Próximo'}:</span>{' '}
+            <span className="text-copper">{KIND_LABEL[brief.nextActionKind] ?? 'Próximo'}:</span>{' '}
             {brief.nextAction}
           </span>
         </div>
@@ -357,7 +360,7 @@ function channelBadgeLabel(kind: ConversationSummary['channelKind'] | undefined)
 
 function ChannelBadge({ kind }: { kind: ConversationSummary['channelKind'] | undefined }) {
   return (
-    <span className="rounded-md border border-border px-1.5 py-px text-[10px] font-bold tracking-wide text-muted">
+    <span className="border border-border px-1.5 py-px font-mono text-[10px] font-medium tracking-[0.08em] text-muted">
       {channelBadgeLabel(kind)}
     </span>
   );
@@ -518,7 +521,7 @@ function ChatPane({
         }
       />
 
-      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto bg-surface-2/35 p-4">
+      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto bg-[rgba(42,70,50,0.04)] p-4">
         {messages.map((m) => (
           <MessageBubble key={m.id} message={m} highlight={m.id === highlightMessageId} />
         ))}
@@ -647,10 +650,10 @@ function MessageBubble({ message, highlight }: { message: InboxMessage; highligh
     <div
       id={`msg-${message.id}`}
       className={cx(
-        'max-w-[78%] rounded-2xl border px-3 py-2',
+        'max-w-[78%] border px-3 py-2',
         mine
-          ? 'self-end rounded-br-md border-accent/15 bg-accent text-accent-ink shadow-sm'
-          : 'self-start rounded-bl-md border-border bg-surface shadow-sm',
+          ? 'self-end border-accent/20 bg-accent text-accent-ink'
+          : 'self-start border-border bg-[#fffdf8]',
         highlight && 'ring-2 ring-accent',
       )}
     >

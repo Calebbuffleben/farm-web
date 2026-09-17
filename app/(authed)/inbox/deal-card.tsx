@@ -66,13 +66,13 @@ export function DealCardBoard({
   }
 
   return (
-    <div className="border-b border-border bg-[linear-gradient(90deg,rgba(22,101,52,0.06),transparent)]">
+    <div className="border-b border-border bg-[linear-gradient(90deg,rgba(181,106,26,0.08),transparent_55%)]">
       <button
         onClick={() => setCollapsed((v) => !v)}
         className="flex w-full items-center gap-2 px-4 py-2.5 text-left"
         aria-expanded={!collapsed}
       >
-        <span className="mr-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.09em] text-accent">
+        <span className="mr-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-copper">
           <Icon name="spark" className="size-3.5" />
           Resumo IA
         </span>
@@ -127,8 +127,8 @@ export function DealCardBoard({
               {brief.products.length > 0 && <> · {brief.products.join(', ')}</>}
             </p>
           </div>
-          <div className="rounded-card border border-accent/20 bg-accent/[0.06] p-3.5 shadow-sm">
-            <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-accent">
+          <div className="border border-copper/30 bg-[rgba(181,106,26,0.08)] p-3.5">
+            <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-copper">
               Próximo passo
               <Chip tone="accent">{KIND_LABEL[brief.nextActionKind] ?? brief.nextActionKind}</Chip>
               {brief.nextActionDueAt && (
@@ -158,7 +158,7 @@ export function DealCardBoard({
                 <p className="text-xs text-muted">Resposta sugerida: “{brief.suggestedReply}”</p>
                 <button
                   type="button"
-                  className="mt-1 text-xs font-semibold text-accent hover:underline"
+                  className="mt-1 text-xs font-semibold text-copper hover:underline"
                   onClick={() => void navigator.clipboard?.writeText(brief.suggestedReply ?? '')}
                 >
                   Copiar resposta

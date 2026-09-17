@@ -58,11 +58,18 @@ export function Icon({
   );
 }
 
-export function BrandMark({ className = 'size-9' }: { className?: string }) {
+export function BrandMark({
+  className = 'size-9',
+  inverted = false,
+}: {
+  className?: string;
+  inverted?: boolean;
+}) {
   return (
     <span
       className={cx(
-        'relative grid shrink-0 place-items-center overflow-hidden rounded-[12px] bg-accent text-accent-ink shadow-[0_5px_14px_rgba(22,101,52,0.22)]',
+        'relative grid shrink-0 place-items-center overflow-hidden',
+        inverted ? 'bg-[#f4ecde] text-ink' : 'bg-accent text-accent-ink',
         className,
       )}
     >
@@ -160,10 +167,10 @@ export function Card({
     <Tag
       onClick={onClick}
       className={cx(
-        'rounded-card border border-border bg-surface text-left shadow-[0_5px_20px_rgba(20,36,25,0.035)]',
+        'rounded-card border border-border bg-surface text-left shadow-[0_1px_0_rgba(26,23,18,0.04)]',
         padded && 'p-5',
         onClick &&
-          'w-full transition duration-150 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-[0_10px_28px_rgba(20,36,25,0.08)] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30',
+          'w-full transition duration-150 hover:-translate-y-0.5 hover:border-copper/50 hover:bg-[#fffdf8] focus:outline-none focus-visible:ring-2 focus-visible:ring-copper/35',
         className,
       )}
     >
@@ -186,8 +193,8 @@ export function SectionHeader({
   return (
     <div className={cx('mb-4 flex flex-wrap items-end justify-between gap-3', className)}>
       <div>
-        <h2 className="text-[17px] font-semibold tracking-[-0.02em]">{title}</h2>
-        {subtitle && <p className="mt-1 text-[13px] leading-relaxed text-muted">{subtitle}</p>}
+        <h2 className="section-title">{title}</h2>
+        {subtitle && <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-muted">{subtitle}</p>}
       </div>
       {right && <div className="flex items-center gap-2">{right}</div>}
     </div>
@@ -219,14 +226,14 @@ export function Stat({
   return (
     <Card
       onClick={onClick}
-      className={cx('relative min-w-0 overflow-hidden', active && 'border-accent/50 bg-surface-2')}
+      className={cx('relative min-w-0 overflow-hidden !p-5', active && 'border-copper/50 bg-[#fffdf8]')}
     >
-      <div className={cx('absolute inset-x-0 top-0 h-0.5', tone === 'neutral' ? 'bg-border-strong' : tone === 'accent' ? 'bg-accent' : tone === 'hot' ? 'bg-hot' : tone === 'danger' ? 'bg-danger' : 'bg-cooling')} />
-      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">{label}</div>
-      <div className={cx('mt-2 text-[32px] font-semibold leading-none tabular-nums tracking-[-0.04em]', toneCls[tone])}>
+      <div className={cx('absolute inset-y-3 left-0 w-[3px]', tone === 'neutral' ? 'bg-border-strong' : tone === 'accent' ? 'bg-accent' : tone === 'hot' ? 'bg-hot' : tone === 'danger' ? 'bg-danger' : 'bg-cooling')} />
+      <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">{label}</div>
+      <div className={cx('mt-3 font-mono text-[40px] font-medium leading-none tracking-[-0.04em]', toneCls[tone])}>
         {value}
       </div>
-      {hint && <div className="mt-1 text-xs text-faint">{hint}</div>}
+      {hint && <div className="mt-2 max-w-[16rem] text-[12px] leading-snug text-faint">{hint}</div>}
     </Card>
   );
 }
@@ -254,7 +261,7 @@ export function Chip({
     <span
       title={title}
       className={cx(
-        'inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-semibold leading-[18px]',
+        'inline-flex items-center gap-1 whitespace-nowrap border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em] leading-[18px]',
         toneCls[tone],
         className,
       )}
@@ -304,7 +311,7 @@ export function TempDot({
         className={cx(
           'inline-block size-2 rounded-full',
           TEMP_BG[temperature],
-          temperature === 'HOT' && 'shadow-[0_0_0_3px_rgba(249,115,22,0.25)]',
+          temperature === 'HOT' && 'shadow-[0_0_0_3px_rgba(194,65,12,0.22)]',
         )}
       />
       {withLabel && <span className="font-medium">{TEMP_LABEL[temperature]}</span>}
@@ -365,7 +372,7 @@ export function Segmented<T extends string | number>({
     <div
       role="tablist"
       className={cx(
-        'inline-flex rounded-control border border-border bg-surface-2 p-0.5 text-sm',
+        'inline-flex border border-border bg-surface-2 p-0.5 text-sm',
         className,
       )}
     >
@@ -378,7 +385,7 @@ export function Segmented<T extends string | number>({
             aria-selected={active}
             onClick={() => onChange(opt.value)}
             className={cx(
-              'rounded-[8px] px-3 py-1 font-medium transition',
+              'px-3 py-1 font-semibold transition',
               active ? 'bg-accent text-accent-ink' : 'text-muted hover:text-text',
             )}
           >
@@ -446,22 +453,22 @@ export function Drawer({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-[#102117]/35 backdrop-blur-[2px]" onClick={onClose} aria-hidden />
+      <div className="absolute inset-0 bg-[#141914]/45 backdrop-blur-[3px]" onClick={onClose} aria-hidden />
       <aside
         ref={dialogRef}
         role="dialog"
         aria-modal
         aria-label={typeof title === 'string' ? title : 'Detalhes'}
         tabIndex={-1}
-        className="relative flex h-full w-full flex-col border-l border-border bg-surface shadow-2xl"
+        className="relative flex h-full w-full flex-col border-l border-border bg-paper shadow-2xl"
         style={{ maxWidth: width }}
       >
         <header className="flex items-center justify-between gap-3 border-b border-border px-6 py-5">
-          <div className="min-w-0 flex-1 text-base font-semibold">{title}</div>
+          <div className="min-w-0 flex-1 font-display text-xl tracking-[-0.03em]">{title}</div>
           <button
             onClick={onClose}
             aria-label="Fechar"
-            className="grid size-9 place-items-center rounded-full border border-border text-muted transition hover:bg-surface-2 hover:text-text"
+            className="grid size-9 place-items-center border border-border text-muted transition hover:bg-surface-2 hover:text-text"
           >
             <Icon name="close" />
           </button>
@@ -495,9 +502,9 @@ export function DataTable<T>({
 }) {
   if (!rows.length && empty) return <>{empty}</>;
   return (
-    <div className="overflow-x-auto rounded-card border border-border bg-surface shadow-[0_5px_20px_rgba(20,36,25,0.035)]">
+    <div className="overflow-x-auto border border-border bg-surface">
       <table className="w-full text-sm">
-        <thead className="bg-surface-2/80 text-[10px] uppercase tracking-[0.09em] text-muted">
+        <thead className="bg-surface-2/80 text-[10px] uppercase tracking-[0.14em] text-muted">
           <tr>
             {columns.map((c) => (
               <th

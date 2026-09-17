@@ -41,26 +41,25 @@ export default function LoginPage() {
   return (
     <main className="auth-shell">
       <section className="auth-visual">
-        <div className="flex items-center gap-3">
-          <BrandMark className="size-11 !bg-white !text-accent" />
+        <div className="relative z-10 flex items-center gap-3">
+          <BrandMark inverted className="size-11" />
           <div>
-            <div className="text-lg font-bold tracking-tight">Farm</div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-white/60">Intelligence</div>
+            <div className="font-display text-[28px] leading-none tracking-[-0.04em]">Farm</div>
+            <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-copper">Caderno de bordo</div>
           </div>
         </div>
         <div className="relative z-10 max-w-xl">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80 backdrop-blur">
-            <Icon name="spark" className="size-4" />
-            Inteligência que nasce das conversas
-          </div>
-          <h1 className="text-[clamp(2.4rem,4.5vw,4.8rem)] font-semibold leading-[0.98] tracking-[-0.055em]">
-            Sua operação comercial, em foco.
+          <div className="eyebrow mb-6">Inteligência que nasce das conversas</div>
+          <h1 className="font-display text-[clamp(2.8rem,5vw,5.4rem)] font-medium leading-[0.92] tracking-[-0.05em]">
+            A carteira, lida em voz alta.
           </h1>
-          <p className="mt-6 max-w-lg text-base leading-relaxed text-white/70">
+          <p className="mt-7 max-w-lg text-[17px] leading-relaxed text-[#ece6d8]/72">
             Saiba onde agir, quem apoiar e quais negócios estão mudando — sem pedir mais uma planilha ao time.
           </p>
         </div>
-        <p className="text-xs text-white/45">Decisões melhores. Relacionamentos mais fortes.</p>
+        <p className="relative z-10 font-mono text-[11px] uppercase tracking-[0.16em] text-[#ece6d8]/40">
+          Decisões melhores · Relacionamentos mais fortes
+        </p>
       </section>
 
       <section className="auth-panel">
@@ -69,7 +68,7 @@ export default function LoginPage() {
             <BrandMark />
           </div>
           <p className="eyebrow mb-2">Acesso seguro</p>
-          <h2 className="text-3xl font-semibold tracking-[-0.04em]">Bem-vindo de volta</h2>
+          <h2 className="font-display text-[2.4rem] font-medium leading-none tracking-[-0.04em]">Bem-vindo de volta</h2>
           <p className="mt-2 text-sm text-muted">Entre para acompanhar sua operação comercial.</p>
           <form onSubmit={onSubmit} className="mt-8 grid gap-5">
             <div>

@@ -27,7 +27,7 @@ export function Signals({
   const [open, setOpen] = useState<QuestionKey | null>(null);
 
   return (
-    <section>
+    <section className="reveal">
       <SectionHeader
         title="Perguntas de gestão"
         subtitle="Respostas objetivas para as cinco perguntas que orientam a rotina do gestor."
@@ -47,10 +47,10 @@ export function Signals({
                 <Card
                   key={q.key}
                   onClick={() => setOpen(active ? null : q.key)}
-                  className={cx('!p-4', active && 'border-accent/70 bg-surface-2')}
+                  className={cx('!p-4', active && 'border-copper/60 bg-[#fffdf8]')}
                 >
-                  <p className="text-[13px] leading-snug text-muted">{q.title}</p>
-                  <p className="mt-2 text-2xl font-semibold tabular-nums text-accent">{s.value}</p>
+                  <p className="font-display text-[15px] leading-snug tracking-[-0.02em] text-text">{q.title}</p>
+                  <p className="mt-3 font-mono text-[28px] font-medium tabular-nums text-copper">{s.value}</p>
                   {s.hint && <p className="mt-0.5 text-[11px] text-faint">{s.hint}</p>}
                 </Card>
               );

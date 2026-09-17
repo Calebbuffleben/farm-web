@@ -79,27 +79,32 @@ export default function DashboardPage() {
   if (forbidden) {
     return (
       <p className="muted">
-        O Centro de Comando é para o gestor (OWNER, ADMIN ou MANAGER). O RTV usa o Inbox.
+        O Centro de Comando é para o gestor. O time de campo usa Conversas.
       </p>
     );
   }
 
   return (
-    <div className="grid gap-10">
-      <header className="flex flex-wrap items-start justify-between gap-5">
+    <div className="grid gap-12">
+      <header className="reveal grid gap-5 border-b border-border pb-7 lg:grid-cols-[1.4fr_auto] lg:items-end">
         <div>
-          <div className="eyebrow mb-2 flex items-center gap-1.5">
-            <Icon name="spark" className="size-3.5" />
+          <div className="eyebrow mb-3 flex items-center gap-2">
+            <span className="h-px w-8 bg-copper" />
             Inteligência comercial
           </div>
-          <h1 className="page-title">Visão executiva</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-            Prioridades, movimento da carteira e próximos passos extraídos das conversas do time.
+          <h1 className="page-title">O que pede sua atenção agora</h1>
+          <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted">
+            Prioridades, movimento da carteira e o próximo passo — extraídos das conversas, sem planilha.
           </p>
         </div>
-        <div className="flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-2 text-xs text-muted shadow-sm">
-          <span className="size-2 rounded-full bg-accent shadow-[0_0_0_4px_rgba(22,101,52,0.1)]" />
-          Análise ativa
+        <div className="flex flex-col items-start gap-2 lg:items-end">
+          <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-faint">
+            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+          </div>
+          <div className="flex items-center gap-2 border border-border bg-surface px-3 py-2 text-xs text-muted">
+            <span className="size-2 rounded-full bg-warm" />
+            Análise ativa
+          </div>
         </div>
       </header>
 
@@ -112,7 +117,7 @@ export default function DashboardPage() {
 
       {home && (
         <>
-          <div className="-mt-5 rounded-card border border-border bg-surface p-3 shadow-[0_6px_24px_rgba(20,36,25,0.04)]">
+          <div className="reveal-2 reveal -mt-4 border border-border bg-surface p-3">
             <Filters
               home={home}
               query={query}
@@ -135,7 +140,7 @@ export default function DashboardPage() {
           <Signals home={home} onOpenFact={openFact} />
           {home.unknownPending > 0 && (
             <p className="text-sm">
-              <Link href="/settings#unknown" className="font-medium text-accent">
+              <Link href="/settings#unknown" className="font-medium text-copper underline decoration-copper/40 underline-offset-4">
                 {home.unknownPending} vínculo{home.unknownPending === 1 ? '' : 's'} para revisar
               </Link>
               <span className="muted"> — confirme a fazenda para manter a carteira precisa.</span>
@@ -173,9 +178,9 @@ function Today({
 }) {
   const s = home.summary;
   return (
-    <section>
+    <section className="reveal-3 reveal">
       <SectionHeader
-        title="O que pede atenção"
+        title="Fila do dia"
         subtitle={`${s.deals} negócio${s.deals === 1 ? '' : 's'} em andamento · sinais dos últimos ${home.window.days} dias`}
       />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -192,7 +197,7 @@ function Today({
 
       <div className="mt-5">
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-[0.1em] text-muted">Fila de prioridades</h3>
+          <h3 className="text-xs font-bold uppercase tracking-[0.16em] text-copper">Prioridades</h3>
           {home.attention.length > 0 && <span className="text-xs text-faint">{home.attention.length} para revisar</span>}
         </div>
         {home.attention.length === 0 ? (
@@ -240,7 +245,7 @@ function AttentionRow({ item, onOpen }: { item: AttentionItem; onOpen: () => voi
             {item.painPoint ?? <span className="text-faint">—</span>}
           </p>
           <p>
-            <span className="font-medium text-accent">Próximo passo:</span> {item.nextAction}
+            <span className="font-medium text-copper">Próximo passo:</span> {item.nextAction}
           </p>
           {item.managerGuidance && (
             <p className="text-warning sm:col-span-2">
@@ -275,7 +280,7 @@ function Radar({
   onPick: (rtvUserId: string | null) => void;
 }) {
   return (
-    <section>
+    <section className="reveal-4 reveal">
       <SectionHeader
         title="Saúde da equipe"
         subtitle="Temperatura da carteira por RTV. Selecione um nome para aprofundar a leitura."
@@ -288,7 +293,7 @@ function Radar({
         empty={
           <Empty
             title="Sem negócios classificados ainda."
-            hint="O radar aparece assim que o worker analisar a primeira conversa."
+            hint="O radar aparece assim que a primeira conversa for analisada."
           />
         }
         columns={[
@@ -326,7 +331,7 @@ function Radar({
             header: 'Índice de atenção',
             align: 'right',
             render: (r) => (
-              <span className={cx('font-semibold', r.score >= 6 ? 'text-danger' : r.score >= 3 ? 'text-cooling' : 'text-muted')}>
+              <span className={cx('font-mono text-lg font-medium', r.score >= 6 ? 'text-danger' : r.score >= 3 ? 'text-cooling' : 'text-muted')}>
                 {r.score}
               </span>
             ),
@@ -349,7 +354,7 @@ function PipelineSection({
   const stages = home.pipeline.byStage.filter((s) => s.stage !== 'SEM_NEGOCIO');
   const noDeal = home.pipeline.byStage.find((s) => s.stage === 'SEM_NEGOCIO');
   return (
-    <section>
+    <section className="reveal-5 reveal">
       <SectionHeader
         title="Pipeline automático"
         subtitle={`${home.pipeline.open} negócio${home.pipeline.open === 1 ? '' : 's'} em andamento, organizados automaticamente a partir das conversas.`}
@@ -361,10 +366,10 @@ function PipelineSection({
       />
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {stages.map((col) => (
-          <div key={col.stage} className="rounded-card border border-border bg-surface-2/50 p-3">
+          <div key={col.stage} className="border border-border bg-surface/80 p-3">
             <div className="mb-3 flex items-center justify-between px-1">
-              <span className="text-sm font-semibold">{STAGE_LABEL[col.stage]}</span>
-              <span className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-semibold tabular-nums text-muted shadow-sm">
+              <span className="font-display text-[17px] tracking-[-0.02em]">{STAGE_LABEL[col.stage]}</span>
+              <span className="bg-surface-2 px-2.5 py-0.5 font-mono text-xs font-medium text-muted">
                 {col.count}
               </span>
             </div>
@@ -400,7 +405,7 @@ function PipelineSection({
               <Card key={b.blockerSubtype} className="!p-4">
                 <div className="flex items-baseline justify-between">
                   <span className="text-sm font-semibold">{blockerLabel(b.blockerSubtype)}</span>
-                  <span className="text-2xl font-semibold tabular-nums text-cooling">{b.count}</span>
+                  <span className="font-mono text-2xl font-medium text-cooling">{b.count}</span>
                 </div>
                 <p className="mt-0.5 text-xs text-muted">
                   {b.count === 1 ? 'cliente aguardando' : 'clientes aguardando'}
@@ -453,7 +458,7 @@ function DealMini({ deal, onOpen }: { deal: DealCard; onOpen: () => void }) {
       )}
       <p className="mt-1.5 line-clamp-2 text-xs leading-snug text-muted">{deal.contextSummary}</p>
       <p className="mt-1.5 line-clamp-2 text-xs leading-snug">
-        <span className="font-medium text-accent">{KIND_LABEL[deal.nextActionKind] ?? 'Próximo'}:</span>{' '}
+        <span className="font-medium text-copper">{KIND_LABEL[deal.nextActionKind] ?? 'Próximo'}:</span>{' '}
         {deal.nextAction}
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-1">

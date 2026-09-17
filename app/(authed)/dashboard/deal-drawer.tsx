@@ -79,8 +79,8 @@ export function DealDrawer({
           </p>
 
           {/* Next Best Action */}
-          <section className="rounded-card border border-accent/40 bg-accent/10 p-4">
-            <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-accent">
+          <section className="border border-copper/30 bg-[rgba(181,106,26,0.08)] p-4">
+            <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-copper">
               Próximo passo
               <Chip tone="accent">{KIND_LABEL[deal.nextActionKind] ?? deal.nextActionKind}</Chip>
               {deal.nextActionDueAt && (
@@ -94,7 +94,7 @@ export function DealDrawer({
                 </span>
               )}
             </div>
-            <p className="text-[15px] font-medium leading-snug">{deal.nextAction}</p>
+            <p className="text-[17px] font-medium leading-snug font-display tracking-[-0.02em]">{deal.nextAction}</p>
             <p className="mt-1.5 text-xs text-muted">
               Responsável: {deal.nextActionOwner === 'MANAGER' ? 'gerente' : 'RTV'}
               {deal.nextActionReason ? ` · ${deal.nextActionReason}` : ''}

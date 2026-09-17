@@ -49,27 +49,29 @@ function AcceptInviteForm() {
   return (
     <main className="auth-shell">
       <section className="auth-visual">
-        <div className="flex items-center gap-3">
-          <BrandMark className="size-11 !bg-white !text-accent" />
-          <span className="text-lg font-bold tracking-tight">Farm</span>
+        <div className="relative z-10 flex items-center gap-3">
+          <BrandMark inverted className="size-11" />
+          <span className="font-display text-[28px] leading-none tracking-[-0.04em]">Farm</span>
         </div>
-        <div className="max-w-xl">
-          <p className="mb-4 text-xs font-bold uppercase tracking-[0.14em] text-white/60">Bem-vindo ao time</p>
-          <h1 className="text-[clamp(2.4rem,4.3vw,4.5rem)] font-semibold leading-[1] tracking-[-0.05em]">
+        <div className="relative z-10 max-w-xl">
+          <p className="eyebrow mb-5">Bem-vindo ao time</p>
+          <h1 className="font-display text-[clamp(2.6rem,4.6vw,5rem)] font-medium leading-[0.94] tracking-[-0.05em]">
             Menos preenchimento. Mais tempo com o produtor.
           </h1>
-          <p className="mt-6 max-w-md text-base leading-relaxed text-white/70">
+          <p className="mt-7 max-w-md text-[17px] leading-relaxed text-[#ece6d8]/72">
             O Farm transforma suas conversas em contexto e próximos passos para toda a equipe.
           </p>
         </div>
-        <p className="text-xs text-white/45">Sua carteira continua sendo sua.</p>
+        <p className="relative z-10 font-mono text-[11px] uppercase tracking-[0.16em] text-[#ece6d8]/40">
+          Sua carteira continua sendo sua
+        </p>
       </section>
 
       <section className="auth-panel">
         <div className="auth-form">
           <div className="mb-8 md:hidden"><BrandMark /></div>
           <p className="eyebrow mb-2">Convite da revenda</p>
-          <h2 className="text-3xl font-semibold tracking-[-0.04em]">Crie seu acesso</h2>
+          <h2 className="font-display text-[2.4rem] font-medium leading-none tracking-[-0.04em]">Crie seu acesso</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted">
           {tokenFromLink
             ? 'Defina seu nome e senha para aceitar o convite.'
