@@ -178,7 +178,7 @@ export default function InboxPage() {
         {!selected && (
           <section className="card hidden min-h-0 place-items-center overflow-hidden !p-0 md:grid">
             <div className="max-w-sm px-8 text-center">
-              <div className="mx-auto mb-5 grid size-14 place-items-center bg-copper/12 text-copper">
+              <div className="mx-auto mb-5 grid size-14 place-items-center rounded-2xl bg-accent/12 text-accent">
                 <Icon name="inbox" className="size-6" />
               </div>
               <h2 className="font-display text-[1.7rem] tracking-[-0.03em]">Selecione uma conversa</h2>
@@ -246,7 +246,7 @@ function ConversationRow({
       )}
     >
       <div className="flex items-center gap-2">
-        <div className="relative grid size-9 shrink-0 place-items-center bg-surface-3 font-display text-sm uppercase text-ink">
+        <div className="relative grid size-9 shrink-0 place-items-center rounded-full bg-surface-3 text-xs font-bold uppercase text-muted">
           {(c.producer?.name ?? c.producerPhone).slice(0, 2)}
           <span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-surface">
             {brief ? <TempDot temperature={brief.temperature} /> : <span className="block size-2 rounded-full bg-cold" />}
@@ -650,10 +650,10 @@ function MessageBubble({ message, highlight }: { message: InboxMessage; highligh
     <div
       id={`msg-${message.id}`}
       className={cx(
-        'max-w-[78%] border px-3 py-2',
+        'max-w-[78%] rounded-2xl border px-3 py-2',
         mine
           ? 'self-end border-accent/20 bg-accent text-accent-ink'
-          : 'self-start border-border bg-[#fffdf8]',
+          : 'self-start border-border bg-surface-2',
         highlight && 'ring-2 ring-accent',
       )}
     >

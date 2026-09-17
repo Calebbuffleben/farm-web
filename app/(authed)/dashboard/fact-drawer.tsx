@@ -78,7 +78,7 @@ export function FactDrawer({
             : ''}
         {detail.moneyHint ? ` · pista ${detail.moneyHint}` : ''}
       </p>
-      <blockquote className="mt-4 whitespace-pre-wrap border-l-2 border-copper bg-surface p-3 font-display text-[17px] leading-snug italic tracking-[-0.02em]">
+      <blockquote className="mt-4 whitespace-pre-wrap rounded-control border-l-2 border-accent bg-surface-2 p-3 text-[15px] leading-snug">
         {evidenceText}
       </blockquote>
       <div className="mt-4 flex flex-wrap gap-2">

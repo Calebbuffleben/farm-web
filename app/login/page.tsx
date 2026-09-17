@@ -45,19 +45,19 @@ export default function LoginPage() {
           <BrandMark inverted className="size-11" />
           <div>
             <div className="font-display text-[28px] leading-none tracking-[-0.04em]">Farm</div>
-            <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-copper">Caderno de bordo</div>
+            <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">Operação</div>
           </div>
         </div>
         <div className="relative z-10 max-w-xl">
           <div className="eyebrow mb-6">Inteligência que nasce das conversas</div>
-          <h1 className="font-display text-[clamp(2.8rem,5vw,5.4rem)] font-medium leading-[0.92] tracking-[-0.05em]">
-            A carteira, lida em voz alta.
+          <h1 className="font-display text-[clamp(2.6rem,5vw,4.8rem)] font-bold leading-[0.94] tracking-[-0.05em]">
+            A operação, no ponto.
           </h1>
-          <p className="mt-7 max-w-lg text-[17px] leading-relaxed text-[#ece6d8]/72">
+          <p className="mt-7 max-w-lg text-[17px] leading-relaxed text-muted">
             Saiba onde agir, quem apoiar e quais negócios estão mudando — sem pedir mais uma planilha ao time.
           </p>
         </div>
-        <p className="relative z-10 font-mono text-[11px] uppercase tracking-[0.16em] text-[#ece6d8]/40">
+        <p className="relative z-10 font-mono text-[11px] uppercase tracking-[0.16em] text-faint">
           Decisões melhores · Relacionamentos mais fortes
         </p>
       </section>
@@ -68,7 +68,7 @@ export default function LoginPage() {
             <BrandMark />
           </div>
           <p className="eyebrow mb-2">Acesso seguro</p>
-          <h2 className="font-display text-[2.4rem] font-medium leading-none tracking-[-0.04em]">Bem-vindo de volta</h2>
+          <h2 className="font-display text-[2.2rem] font-bold leading-none tracking-[-0.04em]">Bem-vindo de volta</h2>
           <p className="mt-2 text-sm text-muted">Entre para acompanhar sua operação comercial.</p>
           <form onSubmit={onSubmit} className="mt-8 grid gap-5">
             <div>

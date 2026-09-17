@@ -69,7 +69,7 @@ export function BrandMark({
     <span
       className={cx(
         'relative grid shrink-0 place-items-center overflow-hidden',
-        inverted ? 'bg-[#f4ecde] text-ink' : 'bg-accent text-accent-ink',
+        inverted ? 'rounded-xl bg-accent text-accent-ink' : 'rounded-xl bg-accent text-accent-ink',
         className,
       )}
     >
@@ -170,7 +170,7 @@ export function Card({
         'rounded-card border border-border bg-surface text-left shadow-[0_1px_0_rgba(26,23,18,0.04)]',
         padded && 'p-5',
         onClick &&
-          'w-full transition duration-150 hover:-translate-y-0.5 hover:border-copper/50 hover:bg-[#fffdf8] focus:outline-none focus-visible:ring-2 focus-visible:ring-copper/35',
+          'w-full transition duration-150 hover:-translate-y-0.5 hover:border-accent/50 hover:bg-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/35',
         className,
       )}
     >
@@ -226,7 +226,7 @@ export function Stat({
   return (
     <Card
       onClick={onClick}
-      className={cx('relative min-w-0 overflow-hidden !p-5', active && 'border-copper/50 bg-[#fffdf8]')}
+      className={cx('relative min-w-0 overflow-hidden !p-5', active && 'border-accent/50 bg-surface-2')}
     >
       <div className={cx('absolute inset-y-3 left-0 w-[3px]', tone === 'neutral' ? 'bg-border-strong' : tone === 'accent' ? 'bg-accent' : tone === 'hot' ? 'bg-hot' : tone === 'danger' ? 'bg-danger' : 'bg-cooling')} />
       <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">{label}</div>
@@ -261,7 +261,7 @@ export function Chip({
     <span
       title={title}
       className={cx(
-        'inline-flex items-center gap-1 whitespace-nowrap border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em] leading-[18px]',
+        'inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-semibold leading-[18px]',
         toneCls[tone],
         className,
       )}
@@ -311,7 +311,7 @@ export function TempDot({
         className={cx(
           'inline-block size-2 rounded-full',
           TEMP_BG[temperature],
-          temperature === 'HOT' && 'shadow-[0_0_0_3px_rgba(194,65,12,0.22)]',
+          temperature === 'HOT' && 'shadow-[0_0_0_3px_rgba(255,122,89,0.28)]',
         )}
       />
       {withLabel && <span className="font-medium">{TEMP_LABEL[temperature]}</span>}
@@ -453,14 +453,14 @@ export function Drawer({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-[#141914]/45 backdrop-blur-[3px]" onClick={onClose} aria-hidden />
+      <div className="absolute inset-0 bg-black/55 backdrop-blur-[3px]" onClick={onClose} aria-hidden />
       <aside
         ref={dialogRef}
         role="dialog"
         aria-modal
         aria-label={typeof title === 'string' ? title : 'Detalhes'}
         tabIndex={-1}
-        className="relative flex h-full w-full flex-col border-l border-border bg-paper shadow-2xl"
+        className="relative flex h-full w-full flex-col border-l border-border bg-surface shadow-2xl"
         style={{ maxWidth: width }}
       >
         <header className="flex items-center justify-between gap-3 border-b border-border px-6 py-5">

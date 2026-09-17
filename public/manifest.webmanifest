@@ -3,8 +3,8 @@
   "short_name": "Farm",
   "start_url": "/inbox",
   "display": "standalone",
-  "background_color": "#efe6d4",
-  "theme_color": "#141914",
+  "background_color": "#070b10",
+  "theme_color": "#070b10",
   "description": "Inteligência comercial para revendas agrícolas",
   "icons": []
 }

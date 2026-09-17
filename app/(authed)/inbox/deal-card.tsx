@@ -66,7 +66,7 @@ export function DealCardBoard({
   }
 
   return (
-    <div className="border-b border-border bg-[linear-gradient(90deg,rgba(181,106,26,0.08),transparent_55%)]">
+    <div className="border-b border-border bg-[linear-gradient(90deg,rgba(62,224,197,0.1),transparent_55%)]">
       <button
         onClick={() => setCollapsed((v) => !v)}
         className="flex w-full items-center gap-2 px-4 py-2.5 text-left"
@@ -127,8 +127,8 @@ export function DealCardBoard({
               {brief.products.length > 0 && <> · {brief.products.join(', ')}</>}
             </p>
           </div>
-          <div className="border border-copper/30 bg-[rgba(181,106,26,0.08)] p-3.5">
-            <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-copper">
+          <div className="rounded-card border border-accent/25 bg-accent/10 p-3.5">
+            <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-accent">
               Próximo passo
               <Chip tone="accent">{KIND_LABEL[brief.nextActionKind] ?? brief.nextActionKind}</Chip>
               {brief.nextActionDueAt && (

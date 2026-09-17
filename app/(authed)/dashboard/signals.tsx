@@ -47,7 +47,7 @@ export function Signals({
                 <Card
                   key={q.key}
                   onClick={() => setOpen(active ? null : q.key)}
-                  className={cx('!p-4', active && 'border-copper/60 bg-[#fffdf8]')}
+                  className={cx('!p-4', active && 'border-accent/60 bg-surface-2')}
                 >
                   <p className="font-display text-[15px] leading-snug tracking-[-0.02em] text-text">{q.title}</p>
                   <p className="mt-3 font-mono text-[28px] font-medium tabular-nums text-copper">{s.value}</p>

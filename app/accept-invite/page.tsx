@@ -55,14 +55,14 @@ function AcceptInviteForm() {
         </div>
         <div className="relative z-10 max-w-xl">
           <p className="eyebrow mb-5">Bem-vindo ao time</p>
-          <h1 className="font-display text-[clamp(2.6rem,4.6vw,5rem)] font-medium leading-[0.94] tracking-[-0.05em]">
+          <h1 className="font-display text-[clamp(2.4rem,4.6vw,4.6rem)] font-bold leading-[0.94] tracking-[-0.05em]">
             Menos preenchimento. Mais tempo com o produtor.
           </h1>
-          <p className="mt-7 max-w-md text-[17px] leading-relaxed text-[#ece6d8]/72">
+          <p className="mt-7 max-w-md text-[17px] leading-relaxed text-muted">
             O Farm transforma suas conversas em contexto e próximos passos para toda a equipe.
           </p>
         </div>
-        <p className="relative z-10 font-mono text-[11px] uppercase tracking-[0.16em] text-[#ece6d8]/40">
+        <p className="relative z-10 font-mono text-[11px] uppercase tracking-[0.16em] text-faint">
           Sua carteira continua sendo sua
         </p>
       </section>
@@ -71,7 +71,7 @@ function AcceptInviteForm() {
         <div className="auth-form">
           <div className="mb-8 md:hidden"><BrandMark /></div>
           <p className="eyebrow mb-2">Convite da revenda</p>
-          <h2 className="font-display text-[2.4rem] font-medium leading-none tracking-[-0.04em]">Crie seu acesso</h2>
+          <h2 className="font-display text-[2.2rem] font-bold leading-none tracking-[-0.04em]">Crie seu acesso</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted">
           {tokenFromLink
             ? 'Defina seu nome e senha para aceitar o convite.'
