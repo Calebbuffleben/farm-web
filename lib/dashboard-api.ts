@@ -57,7 +57,7 @@ export type DealStage =
 export type DealTemperature = 'HOT' | 'WARM' | 'COOLING' | 'COLD';
 export type DealLevel = 'BAIXA' | 'MEDIA' | 'ALTA';
 
-/** Um negócio (1 por conversa) como o backend devolve no pipeline/atenção. */
+/** Um negócio (1 por conversa) como o backend devolve no drawer. */
 export interface DealCard {
   conversationId: string;
   producerName: string | null;
@@ -93,6 +93,32 @@ export interface DealCard {
   updatedAt: string;
 }
 
+/** Card da lista/pipeline/atenção — sem textos do drawer. */
+export interface DealListCard {
+  conversationId: string;
+  producerName: string | null;
+  producerPhone: string | null;
+  farmNames: string[];
+  rtvUserId: string | null;
+  rtvName: string | null;
+  stage: DealStage;
+  temperature: DealTemperature;
+  contextSummary: string;
+  painPoint: string | null;
+  nextAction: string;
+  nextActionOwner: 'RTV' | 'MANAGER';
+  nextActionKind: string;
+  nextActionDueAt: string | null;
+  managerGuidance: string | null;
+  blockerSubtype: string | null;
+  moneyHints: string[];
+  criticalFacts: string[];
+  lastMessageAt: string | null;
+  lastDirection: 'IN' | 'OUT' | null;
+  unanswered: boolean;
+  updatedAt: string;
+}
+
 export type AttentionReason =
   | 'hot_with_pain'
   | 'cooling_late_stage'
@@ -101,7 +127,7 @@ export type AttentionReason =
   | 'followup_overdue'
   | 'manager_escalation';
 
-export interface AttentionItem extends DealCard {
+export interface AttentionItem extends DealListCard {
   reasons: AttentionReason[];
   priority: number;
 }
@@ -122,11 +148,11 @@ export interface RadarRow {
 
 export interface Pipeline {
   open: number;
-  byStage: { stage: DealStage; count: number; deals: DealCard[] }[];
+  byStage: { stage: DealStage; count: number; deals: DealListCard[] }[];
   byBlocker: {
     blockerSubtype: string;
     count: number;
-    deals: DealCard[];
+    deals: DealListCard[];
     moneyHints: string[];
   }[];
 }

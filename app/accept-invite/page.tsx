@@ -3,6 +3,7 @@
 import { FormEvent, Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, storeTokens } from '@/lib/api';
+import { setLastHome } from '@/lib/auth-session';
 import { BrandMark, Icon } from '@/components/ui';
 
 interface AcceptPublicResponse {
@@ -35,6 +36,7 @@ function AcceptInviteForm() {
       });
       if (body.accessToken && body.refreshToken) {
         storeTokens(body.accessToken, body.refreshToken);
+        setLastHome('/inbox');
         router.replace('/inbox');
         return;
       }

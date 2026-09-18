@@ -2,7 +2,8 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchMe, getAccessToken } from '@/lib/api';
+import { clearTokens, fetchMe, getAccessToken } from '@/lib/api';
+import { resolveHomePath } from '@/lib/auth-session';
 
 export default function Home() {
   const router = useRouter();
@@ -11,9 +12,11 @@ export default function Home() {
       router.replace('/login');
       return;
     }
-    fetchMe()
-      .then((me) => router.replace(me.membership.role === 'MEMBER' ? '/inbox' : '/dashboard'))
-      .catch(() => router.replace('/login'));
+    router.replace(resolveHomePath());
+    fetchMe().catch(() => {
+      clearTokens();
+      router.replace('/login');
+    });
   }, [router]);
   return (
     <main className="grid min-h-dvh place-items-center">

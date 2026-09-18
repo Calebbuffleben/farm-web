@@ -40,7 +40,7 @@ import {
   type VoiceAccountInfo,
   type EmailAccountInfo,
 } from '@/lib/inbox-api';
-import { fetchMe, type Me } from '@/lib/api';
+import { useMe } from '@/lib/me-context';
 import { WhatsappImportSection } from './whatsapp-import-section';
 import { MyWhatsappSection } from './my-whatsapp-section';
 import { TeamWhatsappSection } from './team-whatsapp-section';
@@ -72,11 +72,7 @@ export default function SettingsPage() {
   const [emailAccounts, setEmailAccounts] = useState<EmailAccountInfo[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [forbidden, setForbidden] = useState(false);
-  const [me, setMe] = useState<Me | null>(null);
-
-  useEffect(() => {
-    fetchMe().then(setMe).catch(() => undefined);
-  }, []);
+  const me = useMe();
 
   const refresh = useCallback(() => {
     listWabaAccounts()

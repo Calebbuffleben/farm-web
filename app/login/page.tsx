@@ -2,7 +2,8 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ApiError, fetchMe, login } from '@/lib/api';
+import { ApiError, login } from '@/lib/api';
+import { homeForRole, peekRole, setLastHome } from '@/lib/auth-session';
 import { BrandMark, Icon } from '@/components/ui';
 
 export default function LoginPage() {
@@ -19,8 +20,9 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await login(email, password, tenantSlug || undefined);
-      const me = await fetchMe();
-      router.replace(me.membership.role === 'MEMBER' ? '/inbox' : '/dashboard');
+      const home = homeForRole(peekRole());
+      setLastHome(home);
+      router.replace(home);
     } catch (err) {
                   if (err instanceof ApiError) {
         if (err.status === 401) {

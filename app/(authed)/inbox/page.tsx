@@ -11,7 +11,8 @@ import {
   type InboxMessage,
 } from '@/lib/inbox-api';
 import Link from 'next/link';
-import { fetchMe, fetchMediaUrl, type Me } from '@/lib/api';
+import { fetchMediaUrl } from '@/lib/api';
+import { useMe } from '@/lib/me-context';
 import {
   fetchMySession,
   reportEligibility,
@@ -20,10 +21,13 @@ import {
 } from '@/lib/wa-session-api';
 import { useAudioRecorder } from '@/lib/use-audio-recorder';
 import { useTwilioDevice } from '@/lib/use-twilio-device';
+import { useVisibleInterval } from '@/lib/use-visible-interval';
 import { Chip, cx, Icon, KIND_LABEL, StageChip, TempDot } from '@/components/ui';
 import { DealCardBoard } from './deal-card';
 
-const POLL_MS = 5000;
+const LIST_POLL_MS = 20_000;
+const MESSAGE_POLL_MS = 5_000;
+const SESSION_POLL_MS = 30_000;
 const ADMIN_ROLES = new Set(['OWNER', 'ADMIN', 'MANAGER']);
 
 export default function InboxPage() {
@@ -32,7 +36,7 @@ export default function InboxPage() {
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
-  const [me, setMe] = useState<Me | null>(null);
+  const me = useMe();
   const [session, setSession] = useState<WaSessionState | null>(null);
   const [search, setSearch] = useState('');
 
@@ -42,16 +46,12 @@ export default function InboxPage() {
     const m = params.get('m');
     if (c) setSelectedId(c);
     if (m) setHighlightId(m);
-    fetchMe().then(setMe).catch(() => undefined);
   }, []);
 
-  // Estado do WhatsApp do próprio usuário — banner Conectar / Reconectar.
-  useEffect(() => {
-    const load = () => fetchMySession().then(setSession).catch(() => undefined);
-    load();
-    const timer = setInterval(load, POLL_MS * 6);
-    return () => clearInterval(timer);
+  const loadSession = useCallback(() => {
+    fetchMySession().then(setSession).catch(() => undefined);
   }, []);
+  useVisibleInterval(loadSession, SESSION_POLL_MS);
 
   const isAdmin = me ? ADMIN_ROLES.has(me.membership.role) : false;
   const sessionDropped = session?.status === 'DISABLED' && Boolean(session.connectedAt);
@@ -70,11 +70,7 @@ export default function InboxPage() {
       .finally(() => setLoaded(true));
   }, []);
 
-  useEffect(() => {
-    refresh();
-    const timer = setInterval(refresh, POLL_MS);
-    return () => clearInterval(timer);
-  }, [refresh]);
+  useVisibleInterval(refresh, LIST_POLL_MS);
 
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
   const visibleConversations = conversations.filter((c) => {
@@ -405,11 +401,7 @@ function ChatPane({
       });
   }, [conversation.id]);
 
-  useEffect(() => {
-    refresh();
-    const timer = setInterval(refresh, POLL_MS);
-    return () => clearInterval(timer);
-  }, [refresh]);
+  useVisibleInterval(refresh, MESSAGE_POLL_MS);
 
   const count = messages.length;
   useEffect(() => {

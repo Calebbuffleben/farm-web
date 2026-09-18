@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 export function SwRegister() {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js?v=2').catch(() => undefined);
+      navigator.serviceWorker.register('/sw.js?v=3').catch(() => undefined);
     }
   }, []);
   return null;

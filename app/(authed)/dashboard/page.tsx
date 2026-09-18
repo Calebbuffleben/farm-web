@@ -9,7 +9,7 @@ import {
   type AttentionItem,
   type AttentionReason,
   type DashboardHome,
-  type DealCard,
+  type DealListCard,
   type FactDetail,
   type HomeQuery,
   type RadarRow,
@@ -443,7 +443,7 @@ function PipelineSection({
   );
 }
 
-function DealMini({ deal, onOpen }: { deal: DealCard; onOpen: () => void }) {
+function DealMini({ deal, onOpen }: { deal: DealListCard; onOpen: () => void }) {
   return (
     <Card onClick={onOpen} className="!p-3">
       <div className="flex items-center gap-2">

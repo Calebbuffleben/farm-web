@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { fetchBrief, type BriefAnalysis, type DealBrief } from '@/lib/inbox-api';
+import { useVisibleInterval } from '@/lib/use-visible-interval';
 import {
   blockerLabel,
   Chip,
@@ -32,22 +33,22 @@ export function DealCardBoard({
   const [analysis, setAnalysis] = useState<BriefAnalysis | null>(null);
   const [collapsed, setCollapsed] = useState(false);
 
-  useEffect(() => {
-    const load = () =>
-      fetchBrief(conversationId)
-        .then((r) => {
-          setBrief(r.brief);
-          if (r.analysis) {
-            setAnalysis(r.analysis);
-            return;
-          }
-          setAnalysis(r.brief ? 'ready' : hasProducerMessage ? 'pending' : 'waiting_producer');
-        })
-        .catch(() => undefined);
-    load();
-    const timer = setInterval(load, analysis === 'pending' || hasProducerMessage ? 4_000 : 15_000);
-    return () => clearInterval(timer);
-  }, [conversationId, refreshKey, analysis, hasProducerMessage]);
+  const pending = analysis === 'pending';
+
+  const load = useCallback(() => {
+    fetchBrief(conversationId)
+      .then((r) => {
+        setBrief(r.brief);
+        if (r.analysis) {
+          setAnalysis(r.analysis);
+          return;
+        }
+        setAnalysis(r.brief ? 'ready' : hasProducerMessage ? 'pending' : 'waiting_producer');
+      })
+      .catch(() => undefined);
+  }, [conversationId, hasProducerMessage, refreshKey]);
+
+  useVisibleInterval(load, pending ? 4_000 : 15_000);
 
   if (analysis === null && !hasProducerMessage) return null;
   if (!brief) {
