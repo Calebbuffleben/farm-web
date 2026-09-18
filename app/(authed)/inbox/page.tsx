@@ -688,12 +688,18 @@ function AudioMessage({ message }: { message: InboxMessage }) {
 
   return (
     <div>
-      {message.mediaStatus === 'PENDING_MEDIA' && (
+      {message.mediaStatus === 'PENDING_MEDIA' && !message.transcript && (
         <p className="muted text-[13px]">🎙 áudio — baixando…</p>
       )}
-      {message.mediaStatus === 'FAILED' && (
+      {message.mediaStatus === 'FAILED' && !message.transcript && (
         <p className="error text-[13px]">🎙 falha ao baixar o áudio</p>
       )}
+      {!url &&
+        !failed &&
+        (message.transcript || message.mediaStatus === 'READY') &&
+        message.mediaStatus !== 'FAILED' && (
+          <p className="muted text-[13px]">🎙 áudio</p>
+        )}
       {url && <audio controls src={url} className="max-w-full" />}
       {failed && <p className="error text-[13px]">Falha ao carregar áudio</p>}
       {message.transcript && (
