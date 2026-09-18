@@ -336,6 +336,7 @@ function previewOf(c: ConversationSummary): string {
   const prefix = m.direction === 'OUT' ? 'Você: ' : '';
   if (m.type === 'TEXT') return prefix + (m.body ?? '');
   if (m.type === 'AUDIO') return `${prefix}🎙 áudio${m.transcript ? ` — ${m.transcript}` : ''}`;
+  if (m.body) return `${prefix}[${m.type.toLowerCase()}] ${m.body}`;
   return `${prefix}[${m.type.toLowerCase()}]`;
 }
 
@@ -652,10 +653,15 @@ function MessageBubble({ message, highlight }: { message: InboxMessage; highligh
       {message.type === 'TEXT' && <p className="whitespace-pre-wrap text-sm">{message.body}</p>}
       {message.type === 'AUDIO' && <AudioMessage message={message} />}
       {message.type !== 'TEXT' && message.type !== 'AUDIO' && (
-        <p className="muted text-[13px]">
-          [{message.type.toLowerCase()}]
-          {message.mediaStatus === 'PENDING_MEDIA' && ' — baixando…'}
-        </p>
+        <div>
+          <p className="muted text-[13px]">
+            [{message.type.toLowerCase()}]
+            {message.mediaStatus === 'PENDING_MEDIA' && !message.body && ' — baixando…'}
+          </p>
+          {message.body && (
+            <p className="mt-1 whitespace-pre-wrap text-sm">{message.body}</p>
+          )}
+        </div>
       )}
       <span className={cx('mt-1 block text-right text-[11px]', mine ? 'text-white/65' : 'text-faint')}>
         {new Date(message.sentAt).toLocaleTimeString('pt-BR', {
