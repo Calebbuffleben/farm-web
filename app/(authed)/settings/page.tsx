@@ -40,6 +40,12 @@ import {
   type VoiceAccountInfo,
   type EmailAccountInfo,
 } from '@/lib/inbox-api';
+import { useMe } from '@/lib/me-context';
+import { WhatsappImportSection } from './whatsapp-import-section';
+import { MyWhatsappSection } from './my-whatsapp-section';
+import { TeamWhatsappSection } from './team-whatsapp-section';
+import { SalesPolicySection } from './sales-policy-section';
+import { Icon } from '@/components/ui';
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, '') ?? 'http://localhost:8080';
@@ -66,6 +72,7 @@ export default function SettingsPage() {
   const [emailAccounts, setEmailAccounts] = useState<EmailAccountInfo[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [forbidden, setForbidden] = useState(false);
+  const me = useMe();
 
   const refresh = useCallback(() => {
     listWabaAccounts()
@@ -90,31 +97,112 @@ export default function SettingsPage() {
   useEffect(refresh, [refresh]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 760 }}>
-      <section>
-        <h1 style={{ fontSize: 22, marginBottom: 4 }}>Configurações</h1>
-        <p className="muted" style={{ fontSize: 14 }}>
+    <div className="mx-auto grid max-w-[1120px] gap-8">
+      <header className="reveal flex flex-wrap items-end justify-between gap-4 border-b border-border pb-6">
+        <div>
+          <div className="eyebrow mb-3 flex items-center gap-2">
+            <span className="h-px w-8 bg-copper" />
+            Administração
+          </div>
+          <h1 className="page-title">Configurações</h1>
+          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted">
           {forbidden
-            ? 'Canal é coisa de administrador. A fila de fazenda sem dono você resolve aqui.'
-            : 'Canal WhatsApp (WABA), telefonia Twilio e e-mail (Mailgun).'}
-        </p>
-      </section>
+            ? 'Gerencie sua conexão, importações e vínculos pendentes.'
+            : 'Equipe, regras comerciais, canais e governança da sua operação.'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 border border-border bg-surface px-3 py-2 text-xs text-muted">
+          <span className="size-2 rounded-full bg-warm" />
+          Ambiente da revenda
+        </div>
+      </header>
 
       {forbidden ? (
-        <UnknownsSection />
+        <div className="settings-grid grid gap-5">
+          <MyWhatsappSection />
+          <WhatsappImportSection myName={me?.user.name} />
+          <div id="unknown" className="scroll-mt-8"><UnknownsSection /></div>
+        </div>
       ) : (
-        <>
-          <TeamSection members={members} onChanged={refresh} />
-          <WabaSection accounts={accounts} members={members} onChanged={refresh} />
-          <VoiceSection accounts={voiceAccounts} members={members} onChanged={refresh} />
-          <EmailSection accounts={emailAccounts} members={members} onChanged={refresh} />
-          <BillingSection />
-          <CarteiraSection />
-          <ConsentSection />
-          <UnknownsSection />
-        </>
+        <div className="grid items-start gap-7 lg:grid-cols-[210px_minmax(0,1fr)]">
+          <aside className="sticky top-8 hidden border border-border bg-surface p-2 lg:block">
+            <p className="px-3 pb-2 pt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-faint">Nesta página</p>
+            <SettingsLink href="#equipe" label="Equipe e estratégia" />
+            <SettingsLink href="#canais" label="Canais de contato" />
+            <SettingsLink href="#dados" label="Dados e governança" />
+          </aside>
+          <div className="settings-grid grid gap-8">
+            <SettingsGroup
+              id="equipe"
+              eyebrow="Pessoas e operação"
+              title="Equipe e estratégia"
+              description="Defina acessos, política comercial e acompanhe as conexões do time."
+            >
+              <TeamSection members={members} onChanged={refresh} />
+              <SalesPolicySection />
+              <TeamWhatsappSection />
+              <MyWhatsappSection />
+              <BillingSection />
+            </SettingsGroup>
+            <SettingsGroup
+              id="canais"
+              eyebrow="Integrações"
+              title="Canais de contato"
+              description="Conecte os pontos de entrada usados no relacionamento com produtores."
+            >
+              <WabaSection accounts={accounts} members={members} onChanged={refresh} />
+              <VoiceSection accounts={voiceAccounts} members={members} onChanged={refresh} />
+              <EmailSection accounts={emailAccounts} members={members} onChanged={refresh} />
+              <WhatsappImportSection myName={me?.user.name} />
+            </SettingsGroup>
+            <SettingsGroup
+              id="dados"
+              eyebrow="Controle"
+              title="Dados e governança"
+              description="Mantenha carteira, consentimentos e vínculos humanos sob controle."
+            >
+              <CarteiraSection />
+              <ConsentSection />
+              <div id="unknown" className="scroll-mt-8"><UnknownsSection /></div>
+            </SettingsGroup>
+          </div>
+        </div>
       )}
     </div>
+  );
+}
+
+function SettingsLink({ href, label }: { href: string; label: string }) {
+  return (
+    <a href={href} className="flex items-center justify-between rounded-control px-3 py-2.5 text-[13px] font-medium text-muted transition hover:bg-surface-2 hover:text-text">
+      {label}
+      <Icon name="chevron" className="size-3.5" />
+    </a>
+  );
+}
+
+function SettingsGroup({
+  id,
+  eyebrow,
+  title,
+  description,
+  children,
+}: {
+  id: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section id={id} className="scroll-mt-8">
+      <div className="mb-4">
+        <p className="eyebrow mb-1.5">{eyebrow}</p>
+        <h2 className="section-title">{title}</h2>
+        <p className="mt-1 text-sm text-muted">{description}</p>
+      </div>
+      <div className="grid gap-4">{children}</div>
+    </section>
   );
 }
 
@@ -128,7 +216,7 @@ function TeamSection({
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [invites, setInvites] = useState<Array<{ id: string; email: string; role: string; status: string }>>([]);
 
   const loadInvites = useCallback(() => {
@@ -140,10 +228,13 @@ function TeamSection({
     if (!email.trim()) return;
     setBusy(true);
     setError(null);
-    setToken(null);
+    setInviteUrl(null);
     try {
       const created = await createInvite(email.trim(), 'MEMBER');
-      setToken(created.token);
+      setInviteUrl(
+        created.inviteUrl ||
+          `${window.location.origin}/accept-invite?token=${encodeURIComponent(created.token)}`,
+      );
       setEmail('');
       loadInvites();
       onChanged();
@@ -158,8 +249,7 @@ function TeamSection({
     <section className="card">
       <h2 style={{ fontSize: 17, marginBottom: 8 }}>Time da revenda</h2>
       <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
-        Convide o RTV (MEMBER). Ele abre{' '}
-        <code>/accept-invite</code> com o token (só aparece uma vez).
+        Convide o RTV (MEMBER). Ele abre o link do convite (só aparece uma vez).
       </p>
       {members.map((m) => (
         <div
@@ -221,12 +311,16 @@ function TeamSection({
         </button>
       </div>
       {error && <p className="error" style={{ fontSize: 13, marginTop: 8 }}>{error}</p>}
-      {token && (
-        <p style={{ fontSize: 13, marginTop: 8 }}>
-          Token (copie agora): <code style={{ wordBreak: 'break-all' }}>{token}</code>
-          <br />
-          Link:{' '}
-          <code>/accept-invite</code>
+      {inviteUrl && (
+        <p style={{ fontSize: 13, marginTop: 8, wordBreak: 'break-all' }}>
+          Envie este link agora: <code>{inviteUrl}</code>{' '}
+          <button
+            type="button"
+            onClick={() => void navigator.clipboard?.writeText(inviteUrl)}
+            style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: 13 }}
+          >
+            Copiar
+          </button>
         </p>
       )}
       {invites.length > 0 && (

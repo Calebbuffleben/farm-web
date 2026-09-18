@@ -10,11 +10,25 @@ import {
   type ConversationSummary,
   type InboxMessage,
 } from '@/lib/inbox-api';
+import Link from 'next/link';
 import { fetchMediaUrl } from '@/lib/api';
+import { useMe } from '@/lib/me-context';
+import {
+  fetchMySession,
+  reportEligibility,
+  sendReport,
+  type WaSessionState,
+} from '@/lib/wa-session-api';
 import { useAudioRecorder } from '@/lib/use-audio-recorder';
 import { useTwilioDevice } from '@/lib/use-twilio-device';
+import { useVisibleInterval } from '@/lib/use-visible-interval';
+import { Chip, cx, Icon, KIND_LABEL, StageChip, TempDot } from '@/components/ui';
+import { DealCardBoard } from './deal-card';
 
-const POLL_MS = 5000;
+const LIST_POLL_MS = 20_000;
+const MESSAGE_POLL_MS = 5_000;
+const SESSION_POLL_MS = 30_000;
+const ADMIN_ROLES = new Set(['OWNER', 'ADMIN', 'MANAGER']);
 
 export default function InboxPage() {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
@@ -22,6 +36,9 @@ export default function InboxPage() {
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
+  const me = useMe();
+  const [session, setSession] = useState<WaSessionState | null>(null);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -30,6 +47,16 @@ export default function InboxPage() {
     if (c) setSelectedId(c);
     if (m) setHighlightId(m);
   }, []);
+
+  const loadSession = useCallback(() => {
+    fetchMySession().then(setSession).catch(() => undefined);
+  }, []);
+  useVisibleInterval(loadSession, SESSION_POLL_MS);
+
+  const isAdmin = me ? ADMIN_ROLES.has(me.membership.role) : false;
+  const sessionDropped = session?.status === 'DISABLED' && Boolean(session.connectedAt);
+  const neverConnected =
+    session?.status === 'NEVER' || (session?.status === 'DISABLED' && !session.connectedAt);
 
   const refresh = useCallback(() => {
     listConversations()
@@ -43,106 +70,263 @@ export default function InboxPage() {
       .finally(() => setLoaded(true));
   }, []);
 
-  useEffect(() => {
-    refresh();
-    const timer = setInterval(refresh, POLL_MS);
-    return () => clearInterval(timer);
-  }, [refresh]);
+  useVisibleInterval(refresh, LIST_POLL_MS);
 
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
+  const visibleConversations = conversations.filter((c) => {
+    const term = search.trim().toLocaleLowerCase('pt-BR');
+    if (!term) return true;
+    return [c.producer?.name, c.producerPhone, previewOf(c)]
+      .filter(Boolean)
+      .some((value) => value!.toLocaleLowerCase('pt-BR').includes(term));
+  });
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: selected ? 'minmax(260px, 340px) 1fr' : '1fr',
-        gap: 16,
-        height: 'calc(100dvh - 110px)',
-      }}
-    >
-      <div
-        className="card"
-        style={{
-          padding: 0,
-          overflowY: 'auto',
-          display: selected ? undefined : 'block',
-        }}
-      >
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
-          <strong>Conversas</strong>
+    <div className="grid gap-4">
+      <header className={cx('reveal flex items-start justify-between gap-4 border-b border-border pb-5', selected && 'hidden md:flex')}>
+        <div>
+          <div className="eyebrow mb-3 flex items-center gap-2">
+            <span className="h-px w-8 bg-copper" />
+            Relacionamento
+          </div>
+          <h1 className="page-title">Conversas</h1>
+          <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">Atendimento do time e contexto comercial em um só lugar.</p>
         </div>
-        {!loaded && <p className="muted" style={{ padding: 16 }}>Carregando…</p>}
-        {loaded && listError && (
-          <p className="error" style={{ padding: 16, fontSize: 14 }}>{listError}</p>
-        )}
-        {loaded && !listError && conversations.length === 0 && (
-          <p className="muted" style={{ padding: 16, fontSize: 14 }}>
-            Nenhuma conversa ainda. WhatsApp, ligação ou e-mail do produtor
-            aparecem aqui.
-          </p>
-        )}
-        {conversations.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => setSelectedId(c.id)}
-            style={{
-              display: 'block',
-              width: '100%',
-              textAlign: 'left',
-              padding: '12px 16px',
-              background: c.id === selectedId ? 'var(--surface-2)' : 'transparent',
-              border: 'none',
-              borderBottom: '1px solid var(--border)',
-              color: 'var(--text)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-              <strong style={{ fontSize: 14 }}>
-                {c.producer?.name ?? c.producerPhone}
-              </strong>
-              <span
-                className="muted"
-                style={{
-                  fontSize: 12,
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <ChannelBadge kind={c.channelKind} />
-                {c.lastMessageAt ? formatTime(c.lastMessageAt) : ''}
-              </span>
+        <div className="hidden items-center gap-2 border border-border bg-surface px-3 py-2 text-xs text-muted sm:flex">
+          <span className={cx('size-2 rounded-full', session?.status === 'ACTIVE' ? 'bg-warm' : 'bg-cold')} />
+          WhatsApp {session?.status === 'ACTIVE' ? 'conectado' : 'não conectado'}
+        </div>
+      </header>
+      {sessionDropped && (
+        <Banner tone="error">
+          Seu WhatsApp desconectou — nada chega ao Inbox e nenhum relatório sai até reconectar.{' '}
+          <Link href="/settings" className="underline">
+            Reconectar
+          </Link>
+        </Banner>
+      )}
+      {!sessionDropped && neverConnected && !isAdmin && me && (
+        <Banner tone="info">
+          Conecte seu WhatsApp para as conversas com produtores aparecerem aqui.{' '}
+          <Link href="/settings" className="underline">
+            Conectar agora
+          </Link>{' '}
+          · leva 1 minuto, direto do celular.
+        </Banner>
+      )}
+      <div
+        className="grid min-h-0 gap-4 md:h-[calc(100dvh-12.5rem)] md:grid-cols-[minmax(280px,360px)_1fr]"
+      >
+        <aside
+          className={cx(
+            'card flex flex-col overflow-hidden !p-0',
+            selected && 'hidden md:flex',
+          )}
+        >
+          <div className="border-b border-border p-3">
+            <div className="relative">
+              <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="input !min-h-9 !bg-surface-2 !py-1.5 !pl-9 text-sm"
+                placeholder="Buscar produtor ou mensagem"
+                aria-label="Buscar conversas"
+              />
             </div>
-            <div
-              className="muted"
-              style={{
-                fontSize: 13,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                marginTop: 2,
-              }}
-            >
-              {previewOf(c)}
-            </div>
-          </button>
-        ))}
-      </div>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {!loaded && <p className="muted p-4 text-sm">Carregando…</p>}
+            {loaded && listError && <p className="error p-4 text-sm">{listError}</p>}
+            {loaded && !listError && conversations.length === 0 && (
+              <EmptyList sessionActive={session?.status === 'ACTIVE'} isAdmin={isAdmin} />
+            )}
+            {loaded && !listError && conversations.length > 0 && visibleConversations.length === 0 && (
+              <div className="grid place-items-center px-6 py-12 text-center">
+                <p className="text-sm font-medium">Nenhuma conversa encontrada</p>
+                <p className="mt-1 text-xs text-muted">Tente buscar por outro nome ou termo.</p>
+              </div>
+            )}
+            {visibleConversations.map((c) => (
+              <ConversationRow
+                key={c.id}
+                conversation={c}
+                active={c.id === selectedId}
+                onSelect={() => setSelectedId(c.id)}
+              />
+            ))}
+          </div>
+        </aside>
 
-      {selected && (
-        <ChatPane
-          key={selected.id}
-          conversation={selected}
-          highlightMessageId={highlightId}
-          onClose={() => {
-            setSelectedId(null);
-            setHighlightId(null);
-          }}
-          onChanged={refresh}
-        />
+        {selected && (
+          <ChatPane
+            key={selected.id}
+            conversation={selected}
+            highlightMessageId={highlightId}
+            isAdmin={isAdmin}
+            onClose={() => {
+              setSelectedId(null);
+              setHighlightId(null);
+            }}
+            onChanged={refresh}
+          />
+        )}
+        {!selected && (
+          <section className="card hidden min-h-0 place-items-center overflow-hidden !p-0 md:grid">
+            <div className="max-w-sm px-8 text-center">
+              <div className="mx-auto mb-5 grid size-14 place-items-center rounded-2xl bg-accent/12 text-accent">
+                <Icon name="inbox" className="size-6" />
+              </div>
+              <h2 className="font-display text-[1.7rem] tracking-[-0.03em]">Selecione uma conversa</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                Abra um relacionamento para ver o histórico, o resumo da IA e o próximo passo recomendado.
+              </p>
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EmptyList({ sessionActive, isAdmin }: { sessionActive: boolean; isAdmin: boolean }) {
+  return (
+    <div className="muted grid gap-2 p-4 text-sm">
+      {sessionActive ? (
+        <>
+          <p>WhatsApp conectado. Nenhuma conversa ainda.</p>
+          <p>
+            Teste agora: peça a um produtor que mande um &quot;oi&quot; para o seu número — ou
+            mande você, pelo celular. A conversa aparece aqui em segundos.
+          </p>
+        </>
+      ) : (
+        <>
+          <p>Nenhuma conversa ainda.</p>
+          {!isAdmin && (
+            <p>
+              <Link href="/settings" className="btn inline-block">
+                Conectar meu WhatsApp
+              </Link>
+            </p>
+          )}
+          <p>
+            Sem conexão? Em Configurações você também pode{' '}
+            <Link href="/settings" className="text-accent">
+              importar um export .txt
+            </Link>{' '}
+            de uma conversa.
+          </p>
+        </>
       )}
     </div>
+  );
+}
+
+function ConversationRow({
+  conversation: c,
+  active,
+  onSelect,
+}: {
+  conversation: ConversationSummary;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  const brief = c.brief ?? null;
+  return (
+    <button
+      onClick={onSelect}
+      className={cx(
+        'block w-full border-b border-border px-4 py-3 text-left transition hover:bg-surface-2/70',
+        active && 'bg-surface-2',
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <div className="relative grid size-9 shrink-0 place-items-center rounded-full bg-surface-3 text-xs font-bold uppercase text-muted">
+          {(c.producer?.name ?? c.producerPhone).slice(0, 2)}
+          <span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-surface">
+            {brief ? <TempDot temperature={brief.temperature} /> : <span className="block size-2 rounded-full bg-cold" />}
+          </span>
+        </div>
+        <strong className="truncate text-sm">{c.producer?.name ?? c.producerPhone}</strong>
+        <span className="ml-auto flex items-center gap-2 whitespace-nowrap text-xs text-muted">
+          <ChannelBadge kind={c.channelKind} />
+          {c.lastMessageAt ? formatTime(c.lastMessageAt) : ''}
+        </span>
+      </div>
+      <div className="mt-0.5 truncate pl-11 text-[13px] text-muted">{previewOf(c)}</div>
+      {brief && brief.stage !== 'SEM_NEGOCIO' && (
+        <div className="mt-1.5 flex items-center gap-1.5 pl-11">
+          <StageChip stage={brief.stage} />
+          {brief.analysisQuality !== 'COMPLETE' && (
+            <Chip tone="warning">
+              {brief.analysisQuality === 'STALE' ? 'desatualizado' : 'revisar'}
+            </Chip>
+          )}
+          <span className="truncate text-[11px] text-faint">
+            <span className="text-copper">{KIND_LABEL[brief.nextActionKind] ?? 'Próximo'}:</span>{' '}
+            {brief.nextAction}
+          </span>
+        </div>
+      )}
+    </button>
+  );
+}
+
+function Banner({ tone, children }: { tone: 'error' | 'info'; children: React.ReactNode }) {
+  return (
+    <div
+      className={cx(
+        'mb-3 rounded-control border px-3.5 py-2.5 text-sm',
+        tone === 'error' ? 'border-danger/40 bg-danger/10 text-danger' : 'border-border bg-surface',
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Gestor dispara o resumo no WhatsApp do RTV; a fila aplica delay/rampa. */
+function ReportButton({ conversationId }: { conversationId: string }) {
+  const [elig, setElig] = useState<{ eligible: boolean; reason: string | null } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    reportEligibility(conversationId).then(setElig).catch(() => undefined);
+  }, [conversationId]);
+
+  async function onSend() {
+    setBusy(true);
+    setNote(null);
+    try {
+      const r = await sendReport(conversationId);
+      setNote(
+        r.queued
+          ? `Na fila — sai por volta de ${new Date(r.scheduledFor).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.`
+          : 'Enviado.',
+      );
+    } catch (err) {
+      setNote(err instanceof Error ? err.message : 'Falha ao enfileirar');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!elig) return null;
+  return (
+    <span className="ml-auto flex items-center gap-2 text-xs">
+      {note && <span className="muted">{note}</span>}
+      {!elig.eligible && <span className="muted">Relatório: {elig.reason}</span>}
+      <button
+        className="btn !px-3 !py-1.5 text-[13px]"
+        disabled={!elig.eligible || busy}
+        onClick={() => void onSend()}
+        title={elig.reason ?? 'Resumo com os fatos abertos + opção de parar'}
+      >
+        Enviar relatório
+      </button>
+    </span>
   );
 }
 
@@ -163,27 +347,16 @@ function formatTime(iso: string): string {
     : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 }
 
-function channelBadgeLabel(
-  kind: ConversationSummary['channelKind'] | undefined,
-): string {
+function channelBadgeLabel(kind: ConversationSummary['channelKind'] | undefined): string {
   if (kind === 'VOICE') return 'VOZ';
   if (kind === 'EMAIL') return 'E-MAIL';
+  if (kind === 'WA_SESSION') return 'WHATSAPP';
   return 'WABA';
 }
 
 function ChannelBadge({ kind }: { kind: ConversationSummary['channelKind'] | undefined }) {
   return (
-    <span
-      style={{
-        fontSize: 10,
-        fontWeight: 700,
-        letterSpacing: 0.4,
-        border: '1px solid var(--border)',
-        borderRadius: 6,
-        padding: '1px 6px',
-        color: 'var(--text-muted)',
-      }}
-    >
+    <span className="border border-border px-1.5 py-px font-mono text-[10px] font-medium tracking-[0.08em] text-muted">
       {channelBadgeLabel(kind)}
     </span>
   );
@@ -192,11 +365,13 @@ function ChannelBadge({ kind }: { kind: ConversationSummary['channelKind'] | und
 function ChatPane({
   conversation,
   highlightMessageId,
+  isAdmin,
   onClose,
   onChanged,
 }: {
   conversation: ConversationSummary;
   highlightMessageId: string | null;
+  isAdmin: boolean;
   onClose: () => void;
   onChanged: () => void;
 }) {
@@ -211,6 +386,7 @@ function ChatPane({
   const recorder = useAudioRecorder();
   const isVoice = conversation.channelKind === 'VOICE';
   const isEmail = conversation.channelKind === 'EMAIL';
+  const isWaSession = conversation.channelKind === 'WA_SESSION';
   const needsSubject = isEmail && !conversation.emailSubject;
   const fone = useTwilioDevice(isVoice && foneOn);
 
@@ -221,24 +397,16 @@ function ChatPane({
         setSendError(null);
       })
       .catch((err) => {
-        setSendError(
-          err instanceof Error ? err.message : 'Não deu para carregar as mensagens',
-        );
+        setSendError(err instanceof Error ? err.message : 'Não deu para carregar as mensagens');
       });
   }, [conversation.id]);
 
-  useEffect(() => {
-    refresh();
-    const timer = setInterval(refresh, POLL_MS);
-    return () => clearInterval(timer);
-  }, [refresh]);
+  useVisibleInterval(refresh, MESSAGE_POLL_MS);
 
   const count = messages.length;
   useEffect(() => {
     if (highlightMessageId) {
-      document.getElementById(`msg-${highlightMessageId}`)?.scrollIntoView({
-        block: 'center',
-      });
+      document.getElementById(`msg-${highlightMessageId}`)?.scrollIntoView({ block: 'center' });
       return;
     }
     bottomRef.current?.scrollIntoView({ behavior: 'auto' });
@@ -312,70 +480,60 @@ function ChatPane({
   }
 
   return (
-    <div className="card" style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          padding: '12px 16px',
-          borderBottom: '1px solid var(--border)',
-        }}
-      >
+    <section className="card flex min-h-[70dvh] flex-col overflow-hidden !p-0 md:min-h-0">
+      <header className="flex items-center gap-3 border-b border-border px-4 py-3.5">
         <button
           onClick={onClose}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: 'var(--text-muted)',
-            fontSize: 18,
-          }}
+          className="text-lg text-muted hover:text-text"
           aria-label="Fechar conversa"
         >
-          ←
+          <span aria-hidden>←</span>
         </button>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <strong>{conversation.producer?.name ?? conversation.producerPhone}</strong>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <strong className="truncate text-sm">
+              {conversation.producer?.name ?? conversation.producerPhone}
+            </strong>
             <ChannelBadge kind={conversation.channelKind} />
           </div>
-          <div className="muted" style={{ fontSize: 12 }}>
+          <div className="truncate text-xs text-muted">
             {conversation.producerPhone} · via {conversation.wabaNumber.displayNumber}
           </div>
         </div>
-      </div>
+        {isWaSession && isAdmin && <ReportButton conversationId={conversation.id} />}
+      </header>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Card de Bordo: recarrega quando chega mensagem e em intervalo (análise é assíncrona). */}
+      <DealCardBoard
+        conversationId={conversation.id}
+        refreshKey={count}
+        hasProducerMessage={
+          messages.some((m) => m.direction === 'IN') ||
+          conversation.lastMessage?.direction === 'IN'
+        }
+      />
+
+      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto bg-[#f7f9fc] p-4">
         {messages.map((m) => (
-          <MessageBubble
-            key={m.id}
-            message={m}
-            highlight={m.id === highlightMessageId}
-          />
+          <MessageBubble key={m.id} message={m} highlight={m.id === highlightMessageId} />
         ))}
         <div ref={bottomRef} />
       </div>
 
-      <div style={{ padding: 12, borderTop: '1px solid var(--border)' }}>
-        {sendError && (
-          <p className="error" style={{ marginBottom: 8, fontSize: 13 }}>{sendError}</p>
-        )}
+      <footer className="border-t border-border bg-surface p-3">
+        {sendError && <p className="error mb-2 text-[13px]">{sendError}</p>}
         {isVoice ? (
           <div>
-            <p className="muted" style={{ fontSize: 13, marginBottom: 8 }}>
-              A transcrição entra quando a Twilio envia a gravação. Não há
-              texto neste canal.
+            <p className="muted mb-2 text-[13px]">
+              A transcrição entra quando a Twilio envia a gravação. Não há texto neste canal.
             </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div className="flex flex-wrap gap-2">
               <button className="btn" onClick={onCall} disabled={calling}>
                 {calling ? 'Ligando…' : 'Ligar'}
               </button>
               <button
-                className="btn"
+                className={foneOn ? 'btn-ghost' : 'btn'}
                 onClick={() => setFoneOn((on) => !on)}
-                style={{
-                  background: foneOn ? 'var(--surface-2)' : undefined,
-                }}
               >
                 {foneOn ? 'Desativar fone' : 'Atender no navegador'}
               </button>
@@ -396,127 +554,110 @@ function ChatPane({
               )}
             </div>
             {foneOn && (
-              <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-                {fone.status === 'ready' && 'Fone pronto — toques também no navegador. Atenda aqui ou no celular.'}
+              <p className="muted mt-2 text-xs">
+                {fone.status === 'ready' &&
+                  'Fone pronto — toques também no navegador. Atenda aqui ou no celular.'}
                 {fone.status === 'ringing' && 'Ligação no navegador — Atender ou Encerrar.'}
                 {fone.status === 'open' && 'Em chamada.'}
                 {fone.status === 'idle' && 'Ativando fone…'}
               </p>
             )}
-            {fone.error && (
-              <p className="error" style={{ fontSize: 13, marginTop: 8 }}>{fone.error}</p>
-            )}
+            {fone.error && <p className="error mt-2 text-[13px]">{fone.error}</p>}
           </div>
         ) : (
           <>
-        {recorder.error && (
-          <p className="error" style={{ marginBottom: 8, fontSize: 13 }}>{recorder.error}</p>
-        )}
-        {recorder.recording ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ color: 'var(--danger)', fontSize: 14 }}>
-              ● Gravando {Math.floor(recorder.elapsedMs / 1000)}s
-            </span>
-            <button className="btn" onClick={onStopRecording} disabled={sending}>
-              Enviar
-            </button>
-            <button
-              onClick={recorder.cancel}
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--border)',
-                color: 'var(--text-muted)',
-                borderRadius: 10,
-                padding: '10px 18px',
-              }}
-            >
-              Cancelar
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {needsSubject && (
-              <input
-                className="input"
-                placeholder="Assunto"
-                value={subjectDraft}
-                onChange={(e) => setSubjectDraft(e.target.value)}
-                disabled={sending}
-              />
-            )}
-            <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              className="input"
-              placeholder="Mensagem…"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  void onSendText();
-                }
-              }}
-              disabled={sending}
-            />
-            {draft.trim() || isEmail ? (
-              <button
-                className="btn"
-                onClick={onSendText}
-                disabled={sending || !draft.trim() || (needsSubject && !subjectDraft.trim())}
-              >
-                Enviar
-              </button>
+            {recorder.error && <p className="error mb-2 text-[13px]">{recorder.error}</p>}
+            {recorder.recording ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-danger">
+                  ● Gravando {Math.floor(recorder.elapsedMs / 1000)}s
+                </span>
+                <button className="btn" onClick={onStopRecording} disabled={sending}>
+                  Enviar
+                </button>
+                <button className="btn-ghost" onClick={recorder.cancel}>
+                  Cancelar
+                </button>
+              </div>
             ) : (
-              <button
-                className="btn"
-                onClick={recorder.start}
-                disabled={sending}
-                aria-label="Gravar áudio"
-              >
-                🎙
-              </button>
+              <div className="flex flex-col gap-2">
+                {needsSubject && (
+                  <input
+                    className="input"
+                    placeholder="Assunto"
+                    aria-label="Assunto do e-mail"
+                    value={subjectDraft}
+                    onChange={(e) => setSubjectDraft(e.target.value)}
+                    disabled={sending}
+                  />
+                )}
+                <div className="flex gap-2">
+                  <input
+                    className="input"
+                    placeholder="Mensagem…"
+                    aria-label="Mensagem"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        void onSendText();
+                      }
+                    }}
+                    disabled={sending}
+                  />
+                  {draft.trim() || isEmail || isWaSession ? (
+                    <button
+                      className="btn"
+                      onClick={onSendText}
+                      disabled={
+                        sending || !draft.trim() || (needsSubject && !subjectDraft.trim())
+                      }
+                    >
+                      Enviar
+                    </button>
+                  ) : (
+                    <button
+                      className="btn"
+                      onClick={recorder.start}
+                      disabled={sending}
+                      aria-label="Gravar áudio"
+                    >
+                      <Icon name="mic" className="size-5" />
+                    </button>
+                  )}
+                </div>
+              </div>
             )}
-            </div>
-          </div>
-        )}
           </>
         )}
-      </div>
-    </div>
+      </footer>
+    </section>
   );
 }
 
-function MessageBubble({
-  message,
-  highlight,
-}: {
-  message: InboxMessage;
-  highlight?: boolean;
-}) {
+function MessageBubble({ message, highlight }: { message: InboxMessage; highlight?: boolean }) {
   const mine = message.direction === 'OUT';
   return (
     <div
       id={`msg-${message.id}`}
-      style={{
-        alignSelf: mine ? 'flex-end' : 'flex-start',
-        maxWidth: '75%',
-        background: mine ? 'var(--surface-2)' : 'var(--surface)',
-        border: highlight ? '2px solid var(--accent)' : '1px solid var(--border)',
-        borderRadius: 12,
-        padding: '8px 12px',
-      }}
-    >
-      {message.type === 'TEXT' && (
-        <p style={{ fontSize: 14, whiteSpace: 'pre-wrap' }}>{message.body}</p>
+      className={cx(
+        'max-w-[78%] rounded-2xl border px-3 py-2',
+        mine
+          ? 'self-end border-accent/20 bg-accent text-accent-ink'
+          : 'self-start border-border bg-surface-2',
+        highlight && 'ring-2 ring-accent',
       )}
+    >
+      {message.type === 'TEXT' && <p className="whitespace-pre-wrap text-sm">{message.body}</p>}
       {message.type === 'AUDIO' && <AudioMessage message={message} />}
       {message.type !== 'TEXT' && message.type !== 'AUDIO' && (
-        <p className="muted" style={{ fontSize: 13 }}>
+        <p className="muted text-[13px]">
           [{message.type.toLowerCase()}]
           {message.mediaStatus === 'PENDING_MEDIA' && ' — baixando…'}
         </p>
       )}
-      <span className="muted" style={{ fontSize: 11, display: 'block', textAlign: 'right', marginTop: 4 }}>
+      <span className={cx('mt-1 block text-right text-[11px]', mine ? 'text-white/65' : 'text-faint')}>
         {new Date(message.sentAt).toLocaleTimeString('pt-BR', {
           hour: '2-digit',
           minute: '2-digit',
@@ -547,50 +688,39 @@ function AudioMessage({ message }: { message: InboxMessage }) {
 
   return (
     <div>
-      {message.mediaStatus === 'PENDING_MEDIA' && (
-        <p className="muted" style={{ fontSize: 13 }}>🎙 áudio — baixando…</p>
+      {message.mediaStatus === 'PENDING_MEDIA' && !message.transcript && (
+        <p className="muted text-[13px]">🎙 áudio — baixando…</p>
       )}
-      {message.mediaStatus === 'FAILED' && (
-        <p className="error" style={{ fontSize: 13 }}>🎙 falha ao baixar o áudio</p>
+      {message.mediaStatus === 'FAILED' && !message.transcript && (
+        <p className="error text-[13px]">🎙 falha ao baixar o áudio</p>
       )}
-      {url && <audio controls src={url} style={{ maxWidth: '100%' }} />}
-      {failed && <p className="error" style={{ fontSize: 13 }}>Falha ao carregar áudio</p>}
+      {!url &&
+        !failed &&
+        (message.transcript || message.mediaStatus === 'READY') &&
+        message.mediaStatus !== 'FAILED' && (
+          <p className="muted text-[13px]">🎙 áudio</p>
+        )}
+      {url && <audio controls src={url} className="max-w-full" />}
+      {failed && <p className="error text-[13px]">Falha ao carregar áudio</p>}
       {message.transcript && (
-        <p className="muted" style={{ fontSize: 13, marginTop: 6, fontStyle: 'italic' }}>
-          “{message.transcript}”
-        </p>
+        <p className="muted mt-1.5 text-[13px] italic">“{message.transcript}”</p>
       )}
       {message.coachNote && (
-        <div
-          style={{
-            marginTop: 8,
-            padding: '8px 10px',
-            border: '1px solid var(--border)',
-            borderRadius: 8,
-            background: 'var(--surface-2)',
-            fontSize: 13,
-          }}
-        >
+        <div className="mt-2 rounded-control border border-border bg-surface px-2.5 py-2 text-[13px]">
           <span
-            className="muted"
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: 0.04,
-              color:
-                message.coachTone === 'alerta'
-                  ? 'var(--danger)'
-                  : message.coachTone === 'oportunidade'
-                    ? 'var(--accent)'
-                    : undefined,
-            }}
+            className={cx(
+              'text-[10px] font-bold tracking-wide',
+              message.coachTone === 'alerta'
+                ? 'text-danger'
+                : message.coachTone === 'oportunidade'
+                  ? 'text-accent'
+                  : 'text-muted',
+            )}
           >
             COPILOT
-            {message.coachTone && message.coachTone !== 'neutro'
-              ? ` · ${message.coachTone}`
-              : ''}
+            {message.coachTone && message.coachTone !== 'neutro' ? ` · ${message.coachTone}` : ''}
           </span>
-          <p style={{ marginTop: 4 }}>{message.coachNote}</p>
+          <p className="mt-1">{message.coachNote}</p>
         </div>
       )}
     </div>

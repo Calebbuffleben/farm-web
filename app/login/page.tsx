@@ -3,6 +3,8 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiError, login } from '@/lib/api';
+import { homeForRole, peekRole, setLastHome } from '@/lib/auth-session';
+import { BrandMark, Icon } from '@/components/ui';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,7 +20,9 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await login(email, password, tenantSlug || undefined);
-      router.replace('/dashboard');
+      const home = homeForRole(peekRole());
+      setLastHome(home);
+      router.replace(home);
     } catch (err) {
                   if (err instanceof ApiError) {
         if (err.status === 401) {
@@ -37,22 +41,39 @@ export default function LoginPage() {
   }
 
   return (
-    <main
-      style={{
-        minHeight: '100dvh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 16,
-      }}
-    >
-      <div className="card" style={{ width: '100%', maxWidth: 400 }}>
-        <h1 style={{ fontSize: 22, marginBottom: 4 }}>Farm</h1>
-        <p className="muted" style={{ fontSize: 14, marginBottom: 24 }}>
-          Inteligência comercial da revenda
-        </p>
-        <form onSubmit={onSubmit} style={{ display: 'grid', gap: 16 }}>
+    <main className="auth-shell">
+      <section className="auth-visual">
+        <div className="relative z-10 flex items-center gap-3">
+          <BrandMark inverted className="size-11" />
           <div>
+            <div className="font-display text-[28px] leading-none tracking-[-0.04em]">Farm</div>
+            <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/55">Intelligence</div>
+          </div>
+        </div>
+        <div className="relative z-10 max-w-xl">
+          <div className="eyebrow mb-6 !text-white/70">Inteligência que nasce das conversas</div>
+          <h1 className="font-display text-[clamp(2.4rem,4.6vw,4.4rem)] font-semibold leading-[1.05] tracking-[-0.03em]">
+            Sua operação comercial, em foco.
+          </h1>
+          <p className="mt-7 max-w-lg text-[17px] leading-relaxed text-white/70">
+            Saiba onde agir, quem apoiar e quais negócios estão mudando — sem pedir mais uma planilha ao time.
+          </p>
+        </div>
+        <p className="relative z-10 font-mono text-[11px] uppercase tracking-[0.16em] text-white/40">
+          Decisões melhores. Relacionamentos mais fortes.
+        </p>
+      </section>
+
+      <section className="auth-panel">
+        <div className="auth-form">
+          <div className="mb-9 md:hidden">
+            <BrandMark />
+          </div>
+          <p className="eyebrow mb-2">Acesso seguro</p>
+          <h2 className="font-display text-[2.05rem] font-semibold leading-none tracking-[-0.03em]">Bem-vindo de volta</h2>
+          <p className="mt-2 text-sm text-muted">Entre para acompanhar sua operação comercial.</p>
+          <form onSubmit={onSubmit} className="mt-8 grid gap-5">
+            <div>
             <label className="label" htmlFor="email">
               E-mail
             </label>
@@ -65,8 +86,8 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-          </div>
-          <div>
+            </div>
+            <div>
             <label className="label" htmlFor="password">
               Senha
             </label>
@@ -79,8 +100,8 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-          </div>
-          <div>
+            </div>
+            <div>
             <label className="label" htmlFor="tenant">
               Empresa (opcional — se você pertence a mais de uma)
             </label>
@@ -92,13 +113,18 @@ export default function LoginPage() {
               value={tenantSlug}
               onChange={(e) => setTenantSlug(e.target.value)}
             />
-          </div>
-          {error && <p className="error">{error}</p>}
-          <button className="btn" type="submit" disabled={busy}>
-            {busy ? 'Entrando…' : 'Entrar'}
-          </button>
-        </form>
-      </div>
+            </div>
+            {error && <p className="rounded-control border border-danger/20 bg-danger/5 px-3 py-2.5 text-sm text-danger">{error}</p>}
+            <button className="btn mt-1 w-full" type="submit" disabled={busy}>
+              {busy ? 'Entrando…' : 'Entrar na plataforma'}
+              {!busy && <Icon name="arrow" />}
+            </button>
+          </form>
+          <p className="mt-8 text-center text-xs text-faint">
+            Ambiente protegido e isolado para sua revenda.
+          </p>
+        </div>
+      </section>
     </main>
   );
 }

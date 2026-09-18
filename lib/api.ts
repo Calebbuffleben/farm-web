@@ -5,11 +5,20 @@
  * Em 401, tenta UM refresh e repete a chamada; se falhar, desloga.
  */
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, '') ?? 'http://localhost:8080';
+/** Same-origin proxy (`next.config` rewrite `/backend/:path*` → BACKEND_URL). */
+const BASE_URL = '/backend';
 
 const ACCESS_KEY = 'farm_access_token';
 const REFRESH_KEY = 'farm_refresh_token';
+
+export interface Me {
+  user: { id: string; email: string; name: string | null };
+  membership: { id: string; role: string };
+  tenant: { id: string; slug: string; name: string };
+}
+
+let meCache: Me | null = null;
+let meInflight: Promise<Me> | null = null;
 
 export function getAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -17,11 +26,16 @@ export function getAccessToken(): string | null {
 }
 
 export function storeTokens(accessToken: string, refreshToken: string) {
+  meCache = null;
+  meInflight = null;
   window.localStorage.setItem(ACCESS_KEY, accessToken);
   window.localStorage.setItem(REFRESH_KEY, refreshToken);
 }
 
 export function clearTokens() {
+  meCache = null;
+  meInflight = null;
+  if (typeof window === 'undefined') return;
   window.localStorage.removeItem(ACCESS_KEY);
   window.localStorage.removeItem(REFRESH_KEY);
 }
@@ -37,7 +51,11 @@ export class ApiError extends Error {
 
 async function rawRequest(path: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
-  headers.set('Content-Type', 'application/json');
+  const method = (init.method ?? 'GET').toUpperCase();
+  const hasJsonBody = init.body != null && method !== 'GET' && method !== 'HEAD';
+  if (hasJsonBody && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
   const token = getAccessToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
   return fetch(`${BASE_URL}${path}`, { ...init, headers });
@@ -135,14 +153,18 @@ export async function login(email: string, password: string, tenantSlug?: string
   return body;
 }
 
-export interface Me {
-  user: { id: string; email: string; name: string | null };
-  membership: { id: string; role: string };
-  tenant: { id: string; slug: string; name: string };
-}
-
 export function fetchMe() {
-  return api<Me>('/auth/me');
+  if (meCache) return Promise.resolve(meCache);
+  if (meInflight) return meInflight;
+  meInflight = api<Me>('/auth/me')
+    .then((me) => {
+      meCache = me;
+      return me;
+    })
+    .finally(() => {
+      meInflight = null;
+    });
+  return meInflight;
 }
 
 export async function logout() {

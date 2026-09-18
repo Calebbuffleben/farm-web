@@ -5,6 +5,7 @@ export interface FactCard {
   kind: string;
   subtype: string;
   severity: string;
+  confidence?: number;
   headline: string;
   moneyHint: string | null;
   dueHintText: string | null;
@@ -45,6 +46,132 @@ export interface RtvHelpItem {
   items: FactCard[];
 }
 
+// --- Centro de Comando -----------------------------------------------------
+
+export type DealStage =
+  | 'SONDAGEM'
+  | 'NEGOCIACAO'
+  | 'FECHAMENTO'
+  | 'POS_VENDA'
+  | 'SEM_NEGOCIO';
+export type DealTemperature = 'HOT' | 'WARM' | 'COOLING' | 'COLD';
+export type DealLevel = 'BAIXA' | 'MEDIA' | 'ALTA';
+
+/** Um negócio (1 por conversa) como o backend devolve no drawer. */
+export interface DealCard {
+  conversationId: string;
+  producerName: string | null;
+  producerPhone: string | null;
+  farmNames: string[];
+  rtvUserId: string | null;
+  rtvName: string | null;
+  stage: DealStage;
+  temperature: DealTemperature;
+  intent: DealLevel;
+  urgency: DealLevel;
+  contextSummary: string;
+  producerPosition: string | null;
+  dealChange: string | null;
+  painPoint: string | null;
+  nextAction: string;
+  nextActionReason: string | null;
+  nextActionOwner: 'RTV' | 'MANAGER';
+  nextActionKind: string;
+  nextActionDueHint: string | null;
+  nextActionDueAt: string | null;
+  suggestedReply: string | null;
+  managerGuidance: string | null;
+  analysisQuality: 'COMPLETE' | 'PARTIAL' | 'STALE';
+  blockerSubtype: string | null;
+  products: string[];
+  /** Pistas de valor em texto — R$ só com ERP. */
+  moneyHints: string[];
+  criticalFacts: string[];
+  lastMessageAt: string | null;
+  lastDirection: 'IN' | 'OUT' | null;
+  unanswered: boolean;
+  updatedAt: string;
+}
+
+/** Card da lista/pipeline/atenção — sem textos do drawer. */
+export interface DealListCard {
+  conversationId: string;
+  producerName: string | null;
+  producerPhone: string | null;
+  farmNames: string[];
+  rtvUserId: string | null;
+  rtvName: string | null;
+  stage: DealStage;
+  temperature: DealTemperature;
+  contextSummary: string;
+  painPoint: string | null;
+  nextAction: string;
+  nextActionOwner: 'RTV' | 'MANAGER';
+  nextActionKind: string;
+  nextActionDueAt: string | null;
+  managerGuidance: string | null;
+  blockerSubtype: string | null;
+  moneyHints: string[];
+  criticalFacts: string[];
+  lastMessageAt: string | null;
+  lastDirection: 'IN' | 'OUT' | null;
+  unanswered: boolean;
+  updatedAt: string;
+}
+
+export type AttentionReason =
+  | 'hot_with_pain'
+  | 'cooling_late_stage'
+  | 'unanswered'
+  | 'next_action_overdue'
+  | 'followup_overdue'
+  | 'manager_escalation';
+
+export interface AttentionItem extends DealListCard {
+  reasons: AttentionReason[];
+  priority: number;
+}
+
+export interface RadarRow {
+  rtvUserId: string | null;
+  rtvName: string;
+  deals: number;
+  hot: number;
+  warm: number;
+  cooling: number;
+  cold: number;
+  complaints: number;
+  overdueFollowups: number;
+  unanswered: number;
+  score: number;
+}
+
+export interface Pipeline {
+  open: number;
+  byStage: { stage: DealStage; count: number; deals: DealListCard[] }[];
+  byBlocker: {
+    blockerSubtype: string;
+    count: number;
+    deals: DealListCard[];
+    moneyHints: string[];
+  }[];
+}
+
+export interface CommandSummary {
+  deals: number;
+  hot: number;
+  cooling: number;
+  unanswered: number;
+  complaints: number;
+  overdueFollowups: number;
+}
+
+export interface DealDetail extends DealCard {
+  stageConfidence: number;
+  evidenceMessageId: string;
+  facts: FactCard[];
+}
+
 export interface DashboardHome {
   window: {
     from: string;
@@ -54,6 +181,10 @@ export interface DashboardHome {
     days: number;
   };
   unknownPending: number;
+  summary: CommandSummary;
+  attention: AttentionItem[];
+  radar: RadarRow[];
+  pipeline: Pipeline;
   cuts: {
     rtvs: { id: string; name: string }[];
     farms: { id: string; name: string }[];
@@ -72,7 +203,7 @@ export interface DashboardHome {
 
 export interface FactDetail extends Omit<FactCard, 'evidenceMessageId' | 'conversationId'> {
   status: string;
-  channelKind: 'WABA' | 'VOICE' | 'EMAIL';
+  channelKind: 'WABA' | 'VOICE' | 'EMAIL' | 'WA_SESSION';
   evidence: {
     messageId: string;
     conversationId: string;
@@ -114,6 +245,9 @@ export function fetchDashboardHome(query: HomeQuery = {}) {
 
 export const fetchFact = (id: string) => api<FactDetail>(`/dashboard/facts/${id}`);
 
+export const fetchDeal = (conversationId: string) =>
+  api<DealDetail>(`/dashboard/deals/${encodeURIComponent(conversationId)}`);
+
 export const patchFactStatus = (id: string, status: 'OPEN' | 'RESOLVED' | 'DISMISSED') =>
   api<{ id: string; status: string }>(`/dashboard/facts/${id}`, {
     method: 'PATCH',
@@ -121,7 +255,7 @@ export const patchFactStatus = (id: string, status: 'OPEN' | 'RESOLVED' | 'DISMI
   });
 
 export const sendDiscountReply = (id: string, text: string) =>
-  api<{ ok: true; sent: boolean; channel: 'WABA' | 'VOICE' | 'EMAIL' }>(
+  api<{ ok: true; sent: boolean; channel: 'WABA' | 'VOICE' | 'EMAIL' | 'WA_SESSION' }>(
     `/dashboard/facts/${id}/discount-reply`,
     {
       method: 'POST',

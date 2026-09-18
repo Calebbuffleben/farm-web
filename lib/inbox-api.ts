@@ -1,11 +1,44 @@
 import { api, apiUpload } from './api';
+import type { DealLevel, DealStage, DealTemperature } from './dashboard-api';
+
+/** Resumo do brief que vem junto na lista de conversas. */
+export interface DealBriefSummary {
+  stage: DealStage;
+  temperature: DealTemperature;
+  nextAction: string;
+  nextActionKind: string;
+  analysisQuality: 'COMPLETE' | 'PARTIAL' | 'STALE';
+  updatedAt: string;
+}
+
+/** Card de Bordo completo (GET /inbox/conversations/:id/brief). */
+export interface DealBrief extends DealBriefSummary {
+  stageConfidence: number;
+  contextSummary: string;
+  producerPosition: string | null;
+  dealChange: string | null;
+  intent: DealLevel;
+  urgency: DealLevel;
+  painPoint: string | null;
+  nextActionReason: string | null;
+  nextActionOwner: 'RTV' | 'MANAGER';
+  nextActionDueHint: string | null;
+  nextActionDueAt: string | null;
+  suggestedReply: string | null;
+  managerGuidance: string | null;
+  blockerSubtype: string | null;
+  products: string[];
+  evidenceMessageId: string;
+}
 
 export interface ConversationSummary {
+  /** null = a IA ainda não analisou esta conversa. */
+  brief?: DealBriefSummary | null;
   id: string;
   producerPhone: string;
   producer: { id: string; name: string } | null;
   wabaNumber: { id: string; displayNumber: string };
-  channelKind: 'WABA' | 'VOICE' | 'EMAIL';
+  channelKind: 'WABA' | 'VOICE' | 'EMAIL' | 'WA_SESSION';
   emailSubject?: string | null;
   lastMessageAt: string | null;
   lastMessage: {
@@ -35,6 +68,13 @@ export interface InboxMessage {
 
 export const listConversations = () =>
   api<ConversationSummary[]>('/inbox/conversations');
+
+export type BriefAnalysis = 'ready' | 'pending' | 'waiting_producer' | 'blocked';
+
+export const fetchBrief = (conversationId: string) =>
+  api<{ brief: DealBrief | null; analysis?: BriefAnalysis }>(
+    `/inbox/conversations/${conversationId}/brief`,
+  );
 
 export const listMessages = (conversationId: string) =>
   api<InboxMessage[]>(`/inbox/conversations/${conversationId}/messages`);
@@ -243,6 +283,7 @@ export interface CreatedInvite {
   email: string;
   role: string;
   token: string;
+  inviteUrl?: string;
 }
 
 export const createInvite = (email: string, role = 'MEMBER') =>
@@ -317,7 +358,43 @@ export interface ProducerFarm {
 export interface ProducerRow {
   id: string;
   name: string;
+  phones?: { phone: string; label: string | null }[];
   farms: ProducerFarm[];
+}
+
+// --- Import de export .txt do WhatsApp (plano B do canal) ---
+
+export interface ExportPreview {
+  lines: number;
+  senders: { name: string; count: number }[];
+  firstAt: string | null;
+  lastAt: string | null;
+}
+
+export interface ExportImportResult {
+  imported: number;
+  skipped: number;
+  conversationId: string | null;
+}
+
+export function previewWhatsappExport(file: File) {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('mode', 'preview');
+  return apiUpload<ExportPreview>('/inbox/imports/whatsapp-export', form);
+}
+
+export function importWhatsappExport(
+  file: File,
+  input: { rtvName: string; peerPhone: string; endpointId?: string },
+) {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('mode', 'import');
+  form.append('rtvName', input.rtvName);
+  form.append('peerPhone', input.peerPhone);
+  if (input.endpointId) form.append('endpointId', input.endpointId);
+  return apiUpload<ExportImportResult>('/inbox/imports/whatsapp-export', form);
 }
 
 export const listProducers = () => api<ProducerRow[]>('/catalog/producers');
