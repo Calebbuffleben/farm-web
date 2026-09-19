@@ -39,6 +39,7 @@ export interface ConversationSummary {
   producer: { id: string; name: string } | null;
   wabaNumber: { id: string; displayNumber: string };
   channelKind: 'WABA' | 'VOICE' | 'EMAIL' | 'WA_SESSION';
+  assignedUser: { id: string; name: string | null; email: string } | null;
   emailSubject?: string | null;
   lastMessageAt: string | null;
   lastMessage: {
@@ -66,8 +67,10 @@ export interface InboxMessage {
   sentAt: string;
 }
 
-export const listConversations = () =>
-  api<ConversationSummary[]>('/inbox/conversations');
+export const listConversations = (rtvUserId?: string) => {
+  const q = rtvUserId ? `?rtvUserId=${encodeURIComponent(rtvUserId)}` : '';
+  return api<ConversationSummary[]>(`/inbox/conversations${q}`);
+};
 
 export type BriefAnalysis = 'ready' | 'pending' | 'waiting_producer' | 'blocked';
 

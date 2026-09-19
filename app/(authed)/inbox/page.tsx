@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   listConversations,
+  listMembers,
   listMessages,
   sendAudio,
   sendText,
   startCall,
   type ConversationSummary,
   type InboxMessage,
+  type Member,
 } from '@/lib/inbox-api';
 import Link from 'next/link';
 import { fetchMediaUrl } from '@/lib/api';
@@ -39,13 +41,17 @@ export default function InboxPage() {
   const me = useMe();
   const [session, setSession] = useState<WaSessionState | null>(null);
   const [search, setSearch] = useState('');
+  const [rtvUserId, setRtvUserId] = useState('');
+  const [members, setMembers] = useState<Member[]>([]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const c = params.get('c');
     const m = params.get('m');
+    const rtv = params.get('rtv');
     if (c) setSelectedId(c);
     if (m) setHighlightId(m);
+    if (rtv) setRtvUserId(rtv);
   }, []);
 
   const loadSession = useCallback(() => {
@@ -58,8 +64,13 @@ export default function InboxPage() {
   const neverConnected =
     session?.status === 'NEVER' || (session?.status === 'DISABLED' && !session.connectedAt);
 
+  useEffect(() => {
+    if (!isAdmin) return;
+    listMembers().then(setMembers).catch(() => undefined);
+  }, [isAdmin]);
+
   const refresh = useCallback(() => {
-    listConversations()
+    listConversations(isAdmin ? rtvUserId || undefined : undefined)
       .then((rows) => {
         setConversations(rows);
         setListError(null);
@@ -68,7 +79,7 @@ export default function InboxPage() {
         setListError(err instanceof Error ? err.message : 'Não deu para carregar as conversas');
       })
       .finally(() => setLoaded(true));
-  }, []);
+  }, [isAdmin, rtvUserId]);
 
   useVisibleInterval(refresh, LIST_POLL_MS);
 
@@ -76,10 +87,22 @@ export default function InboxPage() {
   const visibleConversations = conversations.filter((c) => {
     const term = search.trim().toLocaleLowerCase('pt-BR');
     if (!term) return true;
-    return [c.producer?.name, c.producerPhone, previewOf(c)]
+    return [c.producer?.name, c.producerPhone, previewOf(c), isAdmin ? rtvLabel(c.assignedUser) : null]
       .filter(Boolean)
       .some((value) => value!.toLocaleLowerCase('pt-BR').includes(term));
   });
+
+  function onPickRtv(next: string) {
+    setRtvUserId(next);
+    setSelectedId(null);
+    setHighlightId(null);
+    replaceInboxQuery({ c: null, m: null, rtv: next || null });
+  }
+
+  function onSelectConversation(id: string) {
+    setSelectedId(id);
+    replaceInboxQuery({ c: id, rtv: rtvUserId || null });
+  }
 
   return (
     <div className="grid gap-4">
@@ -124,13 +147,32 @@ export default function InboxPage() {
           )}
         >
           <div className="border-b border-border p-3">
+            {isAdmin && (
+              <select
+                value={rtvUserId}
+                onChange={(event) => onPickRtv(event.target.value)}
+                className="input mb-2 block w-full !min-h-9 !bg-surface-2 !py-1.5 text-sm"
+                aria-label="Filtrar conversas por RTV"
+              >
+                <option value="">Todos os RTVs</option>
+                {members.map((m) => {
+                  const id = memberUserId(m);
+                  if (!id) return null;
+                  return (
+                    <option key={id} value={id}>
+                      {memberLabel(m)}
+                    </option>
+                  );
+                })}
+              </select>
+            )}
             <div className="relative">
               <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" />
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 className="input !min-h-9 !bg-surface-2 !py-1.5 !pl-9 text-sm"
-                placeholder="Buscar produtor ou mensagem"
+                placeholder={isAdmin ? 'Buscar produtor, RTV ou mensagem' : 'Buscar produtor ou mensagem'}
                 aria-label="Buscar conversas"
               />
             </div>
@@ -152,7 +194,8 @@ export default function InboxPage() {
                 key={c.id}
                 conversation={c}
                 active={c.id === selectedId}
-                onSelect={() => setSelectedId(c.id)}
+                showRtv={isAdmin}
+                onSelect={() => onSelectConversation(c.id)}
               />
             ))}
           </div>
@@ -167,6 +210,7 @@ export default function InboxPage() {
             onClose={() => {
               setSelectedId(null);
               setHighlightId(null);
+              replaceInboxQuery({ c: null, m: null, rtv: rtvUserId || null });
             }}
             onChanged={refresh}
           />
@@ -226,10 +270,12 @@ function EmptyList({ sessionActive, isAdmin }: { sessionActive: boolean; isAdmin
 function ConversationRow({
   conversation: c,
   active,
+  showRtv,
   onSelect,
 }: {
   conversation: ConversationSummary;
   active: boolean;
+  showRtv: boolean;
   onSelect: () => void;
 }) {
   const brief = c.brief ?? null;
@@ -254,6 +300,11 @@ function ConversationRow({
           {c.lastMessageAt ? formatTime(c.lastMessageAt) : ''}
         </span>
       </div>
+      {showRtv && (
+        <div className="mt-0.5 truncate pl-11 text-[11px] font-medium text-copper">
+          RTV {rtvLabel(c.assignedUser)}
+        </div>
+      )}
       <div className="mt-0.5 truncate pl-11 text-[13px] text-muted">{previewOf(c)}</div>
       {brief && brief.stage !== 'SEM_NEGOCIO' && (
         <div className="mt-1.5 flex items-center gap-1.5 pl-11">
@@ -338,6 +389,31 @@ function previewOf(c: ConversationSummary): string {
   if (m.type === 'AUDIO') return `${prefix}🎙 áudio${m.transcript ? ` — ${m.transcript}` : ''}`;
   const tag = `[${m.type.toLowerCase()}]`;
   return m.body ? `${prefix}${tag} ${m.body}` : `${prefix}${tag}`;
+}
+
+function rtvLabel(user: ConversationSummary['assignedUser'] | null | undefined): string {
+  if (!user) return 'Sem RTV';
+  return user.name?.trim() || user.email;
+}
+
+function memberUserId(m: Member): string {
+  return m.user?.id ?? m.userId ?? '';
+}
+
+function memberLabel(m: Member): string {
+  return m.user?.name ?? m.name ?? m.user?.email ?? m.email ?? m.id;
+}
+
+function replaceInboxQuery(patch: { c?: string | null; m?: string | null; rtv?: string | null }) {
+  const params = new URLSearchParams(window.location.search);
+  for (const key of ['c', 'm', 'rtv'] as const) {
+    if (!(key in patch)) continue;
+    const value = patch[key];
+    if (value) params.set(key, value);
+    else params.delete(key);
+  }
+  const qs = params.toString();
+  window.history.replaceState(null, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`);
 }
 
 function formatTime(iso: string): string {
@@ -498,7 +574,14 @@ function ChatPane({
             <ChannelBadge kind={conversation.channelKind} />
           </div>
           <div className="truncate text-xs text-muted">
-            {conversation.producerPhone} · via {conversation.wabaNumber.displayNumber}
+            {conversation.producerPhone}
+            {isAdmin
+              ? ` · via ${rtvLabel(conversation.assignedUser)}${
+                  conversation.wabaNumber.displayNumber
+                    ? ` · ${conversation.wabaNumber.displayNumber}`
+                    : ''
+                }`
+              : ` · via ${conversation.wabaNumber.displayNumber}`}
           </div>
         </div>
         {isWaSession && isAdmin && <ReportButton conversationId={conversation.id} />}
