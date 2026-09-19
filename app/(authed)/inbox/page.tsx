@@ -336,7 +336,8 @@ function previewOf(c: ConversationSummary): string {
   const prefix = m.direction === 'OUT' ? 'Você: ' : '';
   if (m.type === 'TEXT') return prefix + (m.body ?? '');
   if (m.type === 'AUDIO') return `${prefix}🎙 áudio${m.transcript ? ` — ${m.transcript}` : ''}`;
-  return `${prefix}[${m.type.toLowerCase()}]`;
+  const tag = `[${m.type.toLowerCase()}]`;
+  return m.body ? `${prefix}${tag} ${m.body}` : `${prefix}${tag}`;
 }
 
 function formatTime(iso: string): string {
@@ -480,8 +481,8 @@ function ChatPane({
   }
 
   return (
-    <section className="card flex min-h-[70dvh] flex-col overflow-hidden !p-0 md:min-h-0">
-      <header className="flex items-center gap-3 border-b border-border px-4 py-3.5">
+    <section className="card relative flex min-h-[70dvh] flex-col overflow-hidden !p-0 md:min-h-0">
+      <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3.5">
         <button
           onClick={onClose}
           className="text-lg text-muted hover:text-text"
@@ -505,6 +506,7 @@ function ChatPane({
 
       {/* Card de Bordo: recarrega quando chega mensagem e em intervalo (análise é assíncrona). */}
       <DealCardBoard
+        className="min-h-0 max-h-[min(38%,18rem)] shrink-0"
         conversationId={conversation.id}
         refreshKey={count}
         hasProducerMessage={
@@ -513,14 +515,14 @@ function ChatPane({
         }
       />
 
-      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto bg-[#f7f9fc] p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto bg-[#f7f9fc] p-4">
         {messages.map((m) => (
           <MessageBubble key={m.id} message={m} highlight={m.id === highlightMessageId} />
         ))}
         <div ref={bottomRef} />
       </div>
 
-      <footer className="border-t border-border bg-surface p-3">
+      <footer className="shrink-0 border-t border-border bg-surface p-3">
         {sendError && <p className="error mb-2 text-[13px]">{sendError}</p>}
         {isVoice ? (
           <div>
@@ -652,10 +654,15 @@ function MessageBubble({ message, highlight }: { message: InboxMessage; highligh
       {message.type === 'TEXT' && <p className="whitespace-pre-wrap text-sm">{message.body}</p>}
       {message.type === 'AUDIO' && <AudioMessage message={message} />}
       {message.type !== 'TEXT' && message.type !== 'AUDIO' && (
-        <p className="muted text-[13px]">
-          [{message.type.toLowerCase()}]
-          {message.mediaStatus === 'PENDING_MEDIA' && ' — baixando…'}
-        </p>
+        <>
+          <p className="muted text-[13px]">
+            [{message.type.toLowerCase()}]
+            {message.mediaStatus === 'PENDING_MEDIA' && ' — baixando…'}
+          </p>
+          {message.body ? (
+            <p className="mt-1 whitespace-pre-wrap text-sm">{message.body}</p>
+          ) : null}
+        </>
       )}
       <span className={cx('mt-1 block text-right text-[11px]', mine ? 'text-white/65' : 'text-faint')}>
         {new Date(message.sentAt).toLocaleTimeString('pt-BR', {
