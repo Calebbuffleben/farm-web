@@ -124,7 +124,7 @@ function AuthedShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <header className="sticky top-0 z-40 flex h-16 items-center border-b border-border bg-bg/90 px-4 backdrop-blur-md md:hidden">
+      <header className="sticky top-0 z-40 flex h-[calc(4rem+env(safe-area-inset-top,0px))] items-center border-b border-border bg-bg/90 px-4 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md md:hidden">
         <Link href={homeHref} className="flex items-center gap-2.5">
           <BrandMark className="size-8" />
           <span className="font-display text-lg tracking-tight">Farm</span>
@@ -132,7 +132,7 @@ function AuthedShell({ children }: { children: React.ReactNode }) {
         {me && <span className="ml-auto max-w-[45%] truncate text-xs text-muted">{me.tenant.name}</span>}
       </header>
 
-      <main className="min-w-0 pb-24 md:col-start-2 md:pb-0">
+      <main className="min-w-0 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:col-start-2 md:pb-0">
         <div className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-6 md:px-10 md:py-10">
           {children}
         </div>
@@ -140,7 +140,7 @@ function AuthedShell({ children }: { children: React.ReactNode }) {
 
       <nav
         className={cx(
-          'fixed inset-x-3 bottom-3 z-50 grid rounded-2xl border border-border bg-surface/95 p-1.5 shadow-[0_16px_40px_rgba(15,23,42,0.12)] backdrop-blur-md md:hidden',
+          'fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom,0px))] z-50 grid rounded-2xl border border-border bg-surface/95 p-1.5 shadow-[0_16px_40px_rgba(15,23,42,0.12)] backdrop-blur-md md:hidden',
           navItems.length === 2 ? 'grid-cols-2' : 'grid-cols-3',
         )}
       >

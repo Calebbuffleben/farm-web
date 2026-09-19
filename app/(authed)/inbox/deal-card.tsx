@@ -76,9 +76,9 @@ export function DealCardBoard({
           ? 'Mensagem recebida. Estamos atualizando o resumo e os próximos passos.'
           : 'Aguardando a primeira mensagem do produtor para montar o Card de Bordo.';
     return (
-      <div className={cx('flex shrink-0 items-center gap-2 border-b border-border bg-surface-2/60 px-4 py-2.5 text-xs text-faint', className)}>
-        <Icon name="spark" className="size-3.5" />
-        {copy}
+      <div className={cx('flex shrink-0 items-start gap-2 border-b border-border bg-surface-2/60 px-4 py-2.5 text-xs text-faint', className)}>
+        <Icon name="spark" className="mt-0.5 size-3.5 shrink-0" />
+        <span className="min-w-0">{copy}</span>
       </div>
     );
   }
@@ -89,7 +89,7 @@ export function DealCardBoard({
         <div className="flex min-w-0 shrink-0 items-stretch">
           <button
             onClick={() => setCollapsed((v) => !v)}
-            className="flex min-w-0 flex-1 flex-col gap-1 px-4 py-2.5 text-left sm:flex-row sm:items-center sm:gap-2"
+            className="flex min-w-0 flex-1 flex-col gap-1 px-3 py-2.5 text-left sm:px-4 sm:flex-row sm:items-center sm:gap-2"
             aria-expanded={!collapsed}
           >
             <span className="flex min-w-0 flex-wrap items-center gap-2">
@@ -113,11 +113,12 @@ export function DealCardBoard({
           </button>
           <button
             type="button"
-            className="shrink-0 border-l border-border px-3 text-[11px] font-semibold text-copper hover:bg-accent/10"
+            className="shrink-0 border-l border-border px-2.5 text-[11px] font-semibold text-copper hover:bg-accent/10 sm:px-3"
             onClick={() => setFullScreen(true)}
             aria-label="Abrir resumo em tela cheia"
           >
-            Tela cheia
+            <span className="sm:hidden">Ampliar</span>
+            <span className="hidden sm:inline">Tela cheia</span>
           </button>
         </div>
         {!collapsed && (
@@ -129,7 +130,7 @@ export function DealCardBoard({
 
       {fullScreen && (
         <div
-          className="absolute inset-0 z-20 flex flex-col bg-[#f5f8ff]"
+          className="fixed inset-0 z-50 flex flex-col bg-[#f5f8ff] md:absolute md:z-20"
           role="dialog"
           aria-modal
           aria-label="Resumo IA em tela cheia"
