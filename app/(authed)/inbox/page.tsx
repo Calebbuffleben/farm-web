@@ -480,7 +480,7 @@ function ChatPane({
   }
 
   return (
-    <section className="card flex min-h-[70dvh] flex-col overflow-hidden !p-0 md:min-h-0">
+    <section className="card relative flex min-h-[70dvh] flex-col overflow-hidden !p-0 md:min-h-0">
       <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3.5">
         <button
           onClick={onClose}
