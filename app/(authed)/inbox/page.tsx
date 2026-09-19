@@ -481,7 +481,7 @@ function ChatPane({
 
   return (
     <section className="card flex min-h-[70dvh] flex-col overflow-hidden !p-0 md:min-h-0">
-      <header className="flex items-center gap-3 border-b border-border px-4 py-3.5">
+      <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3.5">
         <button
           onClick={onClose}
           className="text-lg text-muted hover:text-text"
@@ -505,6 +505,7 @@ function ChatPane({
 
       {/* Card de Bordo: recarrega quando chega mensagem e em intervalo (análise é assíncrona). */}
       <DealCardBoard
+        className="min-h-0 max-h-[min(38%,18rem)] shrink-0"
         conversationId={conversation.id}
         refreshKey={count}
         hasProducerMessage={
@@ -513,14 +514,14 @@ function ChatPane({
         }
       />
 
-      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto bg-[#f7f9fc] p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto bg-[#f7f9fc] p-4">
         {messages.map((m) => (
           <MessageBubble key={m.id} message={m} highlight={m.id === highlightMessageId} />
         ))}
         <div ref={bottomRef} />
       </div>
 
-      <footer className="border-t border-border bg-surface p-3">
+      <footer className="shrink-0 border-t border-border bg-surface p-3">
         {sendError && <p className="error mb-2 text-[13px]">{sendError}</p>}
         {isVoice ? (
           <div>
