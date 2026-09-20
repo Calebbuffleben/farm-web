@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   listConversations,
+  listMembers,
   listMessages,
   sendAudio,
   sendText,
   startCall,
   type ConversationSummary,
   type InboxMessage,
+  type Member,
 } from '@/lib/inbox-api';
 import Link from 'next/link';
 import { fetchMediaUrl } from '@/lib/api';
@@ -39,13 +41,17 @@ export default function InboxPage() {
   const me = useMe();
   const [session, setSession] = useState<WaSessionState | null>(null);
   const [search, setSearch] = useState('');
+  const [rtvUserId, setRtvUserId] = useState('');
+  const [members, setMembers] = useState<Member[]>([]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const c = params.get('c');
     const m = params.get('m');
+    const rtv = params.get('rtv');
     if (c) setSelectedId(c);
     if (m) setHighlightId(m);
+    if (rtv) setRtvUserId(rtv);
   }, []);
 
   const loadSession = useCallback(() => {
@@ -58,8 +64,13 @@ export default function InboxPage() {
   const neverConnected =
     session?.status === 'NEVER' || (session?.status === 'DISABLED' && !session.connectedAt);
 
+  useEffect(() => {
+    if (!isAdmin) return;
+    listMembers().then(setMembers).catch(() => undefined);
+  }, [isAdmin]);
+
   const refresh = useCallback(() => {
-    listConversations()
+    listConversations(isAdmin ? rtvUserId || undefined : undefined)
       .then((rows) => {
         setConversations(rows);
         setListError(null);
@@ -68,7 +79,7 @@ export default function InboxPage() {
         setListError(err instanceof Error ? err.message : 'Não deu para carregar as conversas');
       })
       .finally(() => setLoaded(true));
-  }, []);
+  }, [isAdmin, rtvUserId]);
 
   useVisibleInterval(refresh, LIST_POLL_MS);
 
@@ -76,29 +87,56 @@ export default function InboxPage() {
   const visibleConversations = conversations.filter((c) => {
     const term = search.trim().toLocaleLowerCase('pt-BR');
     if (!term) return true;
-    return [c.producer?.name, c.producerPhone, previewOf(c)]
+    return [c.producer?.name, c.producerPhone, previewOf(c), isAdmin ? rtvLabel(c.assignedUser) : null]
       .filter(Boolean)
       .some((value) => value!.toLocaleLowerCase('pt-BR').includes(term));
   });
 
+  function onPickRtv(next: string) {
+    setRtvUserId(next);
+    setSelectedId(null);
+    setHighlightId(null);
+    replaceInboxQuery({ c: null, m: null, rtv: next || null });
+  }
+
+  function onSelectConversation(id: string) {
+    setSelectedId(id);
+    replaceInboxQuery({ c: id, rtv: rtvUserId || null });
+  }
+
   return (
-    <div className="grid gap-4">
-      <header className={cx('reveal flex items-start justify-between gap-4 border-b border-border pb-5', selected && 'hidden md:flex')}>
-        <div>
-          <div className="eyebrow mb-3 flex items-center gap-2">
+    <div
+      className={cx(
+        'flex min-h-0 min-w-0 flex-col gap-4',
+        'h-[calc(100dvh-11.25rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))]',
+        selected &&
+          'max-md:-mx-4 max-md:-mt-5 max-md:h-[calc(100dvh-10rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] max-md:gap-0',
+        'md:h-[calc(100dvh-12.5rem)]',
+      )}
+    >
+      <header
+        className={cx(
+          'reveal flex shrink-0 flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:pb-5',
+          selected && 'hidden md:flex',
+        )}
+      >
+        <div className="min-w-0">
+          <div className="eyebrow mb-3 hidden items-center gap-2 md:flex">
             <span className="h-px w-8 bg-copper" />
             Relacionamento
           </div>
           <h1 className="page-title">Conversas</h1>
-          <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">Atendimento do time e contexto comercial em um só lugar.</p>
+          <p className="mt-2 hidden max-w-xl text-[15px] leading-relaxed text-muted sm:mt-3 sm:block">
+            Atendimento do time e contexto comercial em um só lugar.
+          </p>
         </div>
-        <div className="hidden items-center gap-2 border border-border bg-surface px-3 py-2 text-xs text-muted sm:flex">
+        <div className="flex w-fit shrink-0 items-center gap-2 self-start border border-border bg-surface px-3 py-2 text-xs text-muted">
           <span className={cx('size-2 rounded-full', session?.status === 'ACTIVE' ? 'bg-warm' : 'bg-cold')} />
           WhatsApp {session?.status === 'ACTIVE' ? 'conectado' : 'não conectado'}
         </div>
       </header>
       {sessionDropped && (
-        <Banner tone="error">
+        <Banner tone="error" className={cx(selected && 'max-md:hidden')}>
           Seu WhatsApp desconectou — nada chega ao Inbox e nenhum relatório sai até reconectar.{' '}
           <Link href="/settings" className="underline">
             Reconectar
@@ -106,7 +144,7 @@ export default function InboxPage() {
         </Banner>
       )}
       {!sessionDropped && neverConnected && !isAdmin && me && (
-        <Banner tone="info">
+        <Banner tone="info" className={cx(selected && 'max-md:hidden')}>
           Conecte seu WhatsApp para as conversas com produtores aparecerem aqui.{' '}
           <Link href="/settings" className="underline">
             Conectar agora
@@ -114,23 +152,40 @@ export default function InboxPage() {
           · leva 1 minuto, direto do celular.
         </Banner>
       )}
-      <div
-        className="grid min-h-0 gap-4 md:h-[calc(100dvh-12.5rem)] md:grid-cols-[minmax(280px,360px)_1fr]"
-      >
+      <div className="grid min-h-0 min-w-0 flex-1 md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] md:gap-4">
         <aside
           className={cx(
-            'card flex flex-col overflow-hidden !p-0',
+            'card flex h-full min-h-0 min-w-0 flex-col overflow-hidden !p-0',
             selected && 'hidden md:flex',
           )}
         >
           <div className="border-b border-border p-3">
+            {isAdmin && (
+              <select
+                value={rtvUserId}
+                onChange={(event) => onPickRtv(event.target.value)}
+                className="input mb-2 block w-full !min-h-11 !bg-surface-2 text-base md:!min-h-9 md:text-sm"
+                aria-label="Filtrar conversas por RTV"
+              >
+                <option value="">Todos os RTVs</option>
+                {members.map((m) => {
+                  const id = memberUserId(m);
+                  if (!id) return null;
+                  return (
+                    <option key={id} value={id}>
+                      {memberLabel(m)}
+                    </option>
+                  );
+                })}
+              </select>
+            )}
             <div className="relative">
               <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" />
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                className="input !min-h-9 !bg-surface-2 !py-1.5 !pl-9 text-sm"
-                placeholder="Buscar produtor ou mensagem"
+                className="input !min-h-11 !bg-surface-2 !py-1.5 !pl-9 text-base md:!min-h-9 md:text-sm"
+                placeholder={isAdmin ? 'Buscar produtor, RTV ou mensagem' : 'Buscar produtor ou mensagem'}
                 aria-label="Buscar conversas"
               />
             </div>
@@ -152,7 +207,8 @@ export default function InboxPage() {
                 key={c.id}
                 conversation={c}
                 active={c.id === selectedId}
-                onSelect={() => setSelectedId(c.id)}
+                showRtv={isAdmin}
+                onSelect={() => onSelectConversation(c.id)}
               />
             ))}
           </div>
@@ -167,6 +223,7 @@ export default function InboxPage() {
             onClose={() => {
               setSelectedId(null);
               setHighlightId(null);
+              replaceInboxQuery({ c: null, m: null, rtv: rtvUserId || null });
             }}
             onChanged={refresh}
           />
@@ -226,10 +283,12 @@ function EmptyList({ sessionActive, isAdmin }: { sessionActive: boolean; isAdmin
 function ConversationRow({
   conversation: c,
   active,
+  showRtv,
   onSelect,
 }: {
   conversation: ConversationSummary;
   active: boolean;
+  showRtv: boolean;
   onSelect: () => void;
 }) {
   const brief = c.brief ?? null;
@@ -248,15 +307,20 @@ function ConversationRow({
             {brief ? <TempDot temperature={brief.temperature} /> : <span className="block size-2 rounded-full bg-cold" />}
           </span>
         </div>
-        <strong className="truncate text-sm">{c.producer?.name ?? c.producerPhone}</strong>
-        <span className="ml-auto flex items-center gap-2 whitespace-nowrap text-xs text-muted">
+        <strong className="min-w-0 flex-1 truncate text-sm">{c.producer?.name ?? c.producerPhone}</strong>
+        <span className="ml-auto flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[11px] text-muted sm:gap-2 sm:text-xs">
           <ChannelBadge kind={c.channelKind} />
           {c.lastMessageAt ? formatTime(c.lastMessageAt) : ''}
         </span>
       </div>
+      {showRtv && (
+        <div className="mt-0.5 truncate pl-11 text-[11px] font-medium text-copper">
+          RTV {rtvLabel(c.assignedUser)}
+        </div>
+      )}
       <div className="mt-0.5 truncate pl-11 text-[13px] text-muted">{previewOf(c)}</div>
       {brief && brief.stage !== 'SEM_NEGOCIO' && (
-        <div className="mt-1.5 flex items-center gap-1.5 pl-11">
+        <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5 pl-11">
           <StageChip stage={brief.stage} />
           {brief.analysisQuality !== 'COMPLETE' && (
             <Chip tone="warning">
@@ -273,12 +337,21 @@ function ConversationRow({
   );
 }
 
-function Banner({ tone, children }: { tone: 'error' | 'info'; children: React.ReactNode }) {
+function Banner({
+  tone,
+  className,
+  children,
+}: {
+  tone: 'error' | 'info';
+  className?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div
       className={cx(
-        'mb-3 rounded-control border px-3.5 py-2.5 text-sm',
+        'mb-0 shrink-0 rounded-control border px-3.5 py-2.5 text-sm',
         tone === 'error' ? 'border-danger/40 bg-danger/10 text-danger' : 'border-border bg-surface',
+        className,
       )}
     >
       {children}
@@ -315,16 +388,19 @@ function ReportButton({ conversationId }: { conversationId: string }) {
 
   if (!elig) return null;
   return (
-    <span className="ml-auto flex items-center gap-2 text-xs">
-      {note && <span className="muted">{note}</span>}
-      {!elig.eligible && <span className="muted">Relatório: {elig.reason}</span>}
+    <span className="flex w-full min-w-0 flex-col items-stretch gap-1 sm:ml-auto sm:w-auto sm:flex-row sm:items-center sm:gap-2">
+      {note && <span className="muted truncate text-[11px] sm:max-w-48 sm:text-xs">{note}</span>}
+      {!elig.eligible && (
+        <span className="muted hidden max-w-48 truncate text-xs sm:inline">Relatório: {elig.reason}</span>
+      )}
       <button
-        className="btn !px-3 !py-1.5 text-[13px]"
+        className="btn w-full shrink-0 !px-3 !py-1.5 text-[13px] sm:w-auto"
         disabled={!elig.eligible || busy}
         onClick={() => void onSend()}
         title={elig.reason ?? 'Resumo com os fatos abertos + opção de parar'}
       >
-        Enviar relatório
+        <span className="sm:hidden">Relatório</span>
+        <span className="hidden sm:inline">Enviar relatório</span>
       </button>
     </span>
   );
@@ -338,6 +414,31 @@ function previewOf(c: ConversationSummary): string {
   if (m.type === 'AUDIO') return `${prefix}🎙 áudio${m.transcript ? ` — ${m.transcript}` : ''}`;
   const tag = `[${m.type.toLowerCase()}]`;
   return m.body ? `${prefix}${tag} ${m.body}` : `${prefix}${tag}`;
+}
+
+function rtvLabel(user: ConversationSummary['assignedUser'] | null | undefined): string {
+  if (!user) return 'Sem RTV';
+  return user.name?.trim() || user.email;
+}
+
+function memberUserId(m: Member): string {
+  return m.user?.id ?? m.userId ?? '';
+}
+
+function memberLabel(m: Member): string {
+  return m.user?.name ?? m.name ?? m.user?.email ?? m.email ?? m.id;
+}
+
+function replaceInboxQuery(patch: { c?: string | null; m?: string | null; rtv?: string | null }) {
+  const params = new URLSearchParams(window.location.search);
+  for (const key of ['c', 'm', 'rtv'] as const) {
+    if (!(key in patch)) continue;
+    const value = patch[key];
+    if (value) params.set(key, value);
+    else params.delete(key);
+  }
+  const qs = params.toString();
+  window.history.replaceState(null, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`);
 }
 
 function formatTime(iso: string): string {
@@ -481,32 +582,45 @@ function ChatPane({
   }
 
   return (
-    <section className="card relative flex min-h-[70dvh] flex-col overflow-hidden !p-0 md:min-h-0">
-      <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3.5">
-        <button
-          onClick={onClose}
-          className="text-lg text-muted hover:text-text"
-          aria-label="Fechar conversa"
-        >
-          <span aria-hidden>←</span>
-        </button>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <strong className="truncate text-sm">
-              {conversation.producer?.name ?? conversation.producerPhone}
-            </strong>
-            <ChannelBadge kind={conversation.channelKind} />
-          </div>
-          <div className="truncate text-xs text-muted">
-            {conversation.producerPhone} · via {conversation.wabaNumber.displayNumber}
+    <section className="card relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden !p-0 max-md:rounded-none max-md:border-x-0">
+      <header className="flex shrink-0 flex-col gap-2 border-b border-border px-3 py-3 sm:flex-row sm:items-center sm:gap-3 sm:px-4 sm:py-3.5">
+        <div className="flex min-w-0 items-start gap-2 sm:items-center sm:flex-1">
+          <button
+            onClick={onClose}
+            className="grid size-9 shrink-0 place-items-center text-lg text-muted hover:text-text"
+            aria-label="Fechar conversa"
+          >
+            <span aria-hidden>←</span>
+          </button>
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <strong className="min-w-0 truncate text-sm">
+                {conversation.producer?.name ?? conversation.producerPhone}
+              </strong>
+              <ChannelBadge kind={conversation.channelKind} />
+            </div>
+            <div className="truncate text-xs text-muted">
+              {conversation.producerPhone}
+              {isAdmin
+                ? ` · via ${rtvLabel(conversation.assignedUser)}${
+                    conversation.wabaNumber.displayNumber
+                      ? ` · ${conversation.wabaNumber.displayNumber}`
+                      : ''
+                  }`
+                : ` · via ${conversation.wabaNumber.displayNumber}`}
+            </div>
           </div>
         </div>
-        {isWaSession && isAdmin && <ReportButton conversationId={conversation.id} />}
+        {isWaSession && isAdmin && (
+          <div className="min-w-0 sm:ml-auto sm:w-auto sm:shrink-0">
+            <ReportButton conversationId={conversation.id} />
+          </div>
+        )}
       </header>
 
       {/* Card de Bordo: recarrega quando chega mensagem e em intervalo (análise é assíncrona). */}
       <DealCardBoard
-        className="min-h-0 max-h-[min(38%,18rem)] shrink-0"
+        className="min-h-0 max-h-36 shrink-0 md:max-h-[min(38%,18rem)]"
         conversationId={conversation.id}
         refreshKey={count}
         hasProducerMessage={
@@ -522,7 +636,7 @@ function ChatPane({
         <div ref={bottomRef} />
       </div>
 
-      <footer className="shrink-0 border-t border-border bg-surface p-3">
+      <footer className="shrink-0 border-t border-border bg-surface p-3 max-md:pb-3">
         {sendError && <p className="error mb-2 text-[13px]">{sendError}</p>}
         {isVoice ? (
           <div>
@@ -570,7 +684,7 @@ function ChatPane({
           <>
             {recorder.error && <p className="error mb-2 text-[13px]">{recorder.error}</p>}
             {recorder.recording ? (
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <span className="text-sm text-danger">
                   ● Gravando {Math.floor(recorder.elapsedMs / 1000)}s
                 </span>
@@ -593,9 +707,9 @@ function ChatPane({
                     disabled={sending}
                   />
                 )}
-                <div className="flex gap-2">
+                <div className="flex min-w-0 gap-2">
                   <input
-                    className="input"
+                    className="input min-w-0 flex-1 !w-auto text-base md:text-sm"
                     placeholder="Mensagem…"
                     aria-label="Mensagem"
                     value={draft}
@@ -610,7 +724,7 @@ function ChatPane({
                   />
                   {draft.trim() || isEmail || isWaSession ? (
                     <button
-                      className="btn"
+                      className="btn shrink-0"
                       onClick={onSendText}
                       disabled={
                         sending || !draft.trim() || (needsSubject && !subjectDraft.trim())
@@ -620,7 +734,7 @@ function ChatPane({
                     </button>
                   ) : (
                     <button
-                      className="btn"
+                      className="btn shrink-0"
                       onClick={recorder.start}
                       disabled={sending}
                       aria-label="Gravar áudio"
@@ -644,7 +758,7 @@ function MessageBubble({ message, highlight }: { message: InboxMessage; highligh
     <div
       id={`msg-${message.id}`}
       className={cx(
-        'max-w-[78%] rounded-2xl border px-3 py-2',
+        'max-w-[85%] rounded-2xl border px-3 py-2 sm:max-w-[78%]',
         mine
           ? 'self-end border-accent/20 bg-accent text-accent-ink'
           : 'self-start border-border bg-surface-2',
