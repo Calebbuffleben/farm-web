@@ -26,6 +26,7 @@ import {
   listEmailAccounts,
   resolveUnknown,
   fetchBilling,
+  changeBillingPlan,
   grantConsent,
   listConsents,
   openBillingPortal,
@@ -41,6 +42,7 @@ import {
   type EmailAccountInfo,
 } from '@/lib/inbox-api';
 import { useMe } from '@/lib/me-context';
+import { ApiError } from '@/lib/api';
 import { WhatsappImportSection } from './whatsapp-import-section';
 import { MyWhatsappSection } from './my-whatsapp-section';
 import { TeamWhatsappSection } from './team-whatsapp-section';
@@ -216,18 +218,28 @@ function TeamSection({
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [seatLimit, setSeatLimit] = useState(false);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [invites, setInvites] = useState<Array<{ id: string; email: string; role: string; status: string }>>([]);
+  const [billing, setBilling] = useState<BillingSnapshot | null>(null);
 
   const loadInvites = useCallback(() => {
     listInvites().then(setInvites).catch(() => undefined);
   }, []);
   useEffect(loadInvites, [loadInvites]);
+  useEffect(() => {
+    fetchBilling().then(setBilling).catch(() => undefined);
+  }, [members, invites]);
+
+  const used = billing?.seatsUsed ?? members.length + invites.filter((i) => i.status === 'PENDING').length;
+  const cap = billing?.pendingMaxUsers ?? billing?.maxUsers;
+  const full = cap != null && used >= cap;
 
   async function onInvite() {
     if (!email.trim()) return;
     setBusy(true);
     setError(null);
+    setSeatLimit(false);
     setInviteUrl(null);
     try {
       const created = await createInvite(email.trim(), 'MEMBER');
@@ -239,7 +251,12 @@ function TeamSection({
       loadInvites();
       onChanged();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao convidar');
+      if (err instanceof ApiError && err.status === 402) {
+        setSeatLimit(true);
+        setError('Limite de assentos atingido. Faça upgrade do plano para convidar mais pessoas.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Falha ao convidar');
+      }
     } finally {
       setBusy(false);
     }
@@ -250,6 +267,9 @@ function TeamSection({
       <h2 style={{ fontSize: 17, marginBottom: 8 }}>Time da revenda</h2>
       <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
         Convide o RTV (MEMBER). Ele abre o link do convite (só aparece uma vez).
+        {billing
+          ? ` Assentos: ${used}/${cap} (membros + convites pendentes).`
+          : null}
       </p>
       {members.map((m) => (
         <div
@@ -306,11 +326,16 @@ function TeamSection({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <button className="btn" disabled={busy || !email.trim()} onClick={() => void onInvite()}>
-          Convidar RTV
+        <button className="btn" disabled={busy || !email.trim() || full} onClick={() => void onInvite()}>
+          {full ? 'Sem vagas' : 'Convidar RTV'}
         </button>
       </div>
       {error && <p className="error" style={{ fontSize: 13, marginTop: 8 }}>{error}</p>}
+      {seatLimit && (
+        <p style={{ fontSize: 13, marginTop: 8 }}>
+          <a href="#billing" style={{ color: 'var(--accent)' }}>Ver planos e assinar</a>
+        </p>
+      )}
       {inviteUrl && (
         <p style={{ fontSize: 13, marginTop: 8, wordBreak: 'break-all' }}>
           Envie este link agora: <code>{inviteUrl}</code>{' '}
@@ -1217,16 +1242,21 @@ function UnknownsSection() {
 function BillingSection() {
   const [snap, setSnap] = useState<BillingSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     fetchBilling().then(setSnap).catch(() => undefined);
   }, []);
+  useEffect(reload, [reload]);
 
   if (!snap) return null;
 
+  const publicPlans = ['STARTER', 'GROWTH', 'SCALE'] as const;
+  const enterpriseContact =
+    process.env.NEXT_PUBLIC_ENTERPRISE_CONTACT_URL || 'mailto:comercial@example.com';
+
   async function onPortal() {
-    setBusy(true);
+    setBusy('portal');
     setError(null);
     try {
       const { url } = await openBillingPortal();
@@ -1234,26 +1264,79 @@ function BillingSection() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Portal indisponível (Stripe)');
     } finally {
-      setBusy(false);
+      setBusy(null);
+    }
+  }
+
+  async function onChangePlan(plan: string) {
+    setBusy(plan);
+    setError(null);
+    try {
+      const result = await changeBillingPlan(plan);
+      if (result.checkoutUrl) {
+        window.location.href = result.checkoutUrl;
+        return;
+      }
+      setSnap(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível alterar o plano');
+    } finally {
+      setBusy(null);
     }
   }
 
   return (
-    <section className="card">
+    <section className="card" id="billing">
       <h2 style={{ fontSize: 17, marginBottom: 8 }}>Plano e assentos</h2>
       <p style={{ fontSize: 14 }}>
-        {snap.plan} · {snap.status} · {snap.memberCount}/{snap.maxUsers} assentos
+        {snap.plan} · {snap.status} · {snap.seatsUsed}/{snap.maxUsers} assentos
         {snap.seatsRemaining >= 0 ? ` · ${snap.seatsRemaining} livres` : ''}
+        {snap.pendingInvites ? ` · ${snap.pendingInvites} convites pendentes` : ''}
       </p>
+      {snap.pendingPlan ? (
+        <p className="muted" style={{ fontSize: 13, marginTop: 6 }}>
+          Downgrade para {snap.pendingPlan} ({snap.pendingMaxUsers} assentos) no fim do ciclo
+          {snap.currentPeriodEnd
+            ? ` (${new Date(snap.currentPeriodEnd).toLocaleDateString('pt-BR')})`
+            : ''}
+          .
+        </p>
+      ) : null}
+      {snap.currentPeriodEnd && snap.cancelAtPeriodEnd ? (
+        <p className="muted" style={{ fontSize: 13, marginTop: 6 }}>
+          Cancela em {new Date(snap.currentPeriodEnd).toLocaleDateString('pt-BR')}.
+        </p>
+      ) : null}
+      {snap.seatLimitHoldReason ? (
+        <p className="error" style={{ marginTop: 8 }}>{snap.seatLimitHoldReason}</p>
+      ) : null}
       {error && <p className="error" style={{ marginTop: 8 }}>{error}</p>}
-      <button
-        className="btn"
-        style={{ marginTop: 12 }}
-        disabled={busy}
-        onClick={() => void onPortal()}
-      >
-        Portal de cobrança
-      </button>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+        {publicPlans
+          .filter((p) => p !== snap.plan)
+          .map((p) => (
+            <button
+              key={p}
+              className="btn"
+              disabled={Boolean(busy)}
+              onClick={() => void onChangePlan(p)}
+            >
+              {busy === p ? 'Aguarde…' : `Ir para ${p}`}
+            </button>
+          ))}
+        {snap.hasStripeCustomer ? (
+          <button className="btn" disabled={Boolean(busy)} onClick={() => void onPortal()}>
+            {busy === 'portal' ? 'Abrindo…' : 'Portal de cobrança'}
+          </button>
+        ) : (
+          <p className="muted" style={{ fontSize: 13, alignSelf: 'center' }}>
+            Sem cliente Stripe ainda — escolha um plano acima para assinar.
+          </p>
+        )}
+        <a className="btn" href={enterpriseContact}>
+          Enterprise sob consulta
+        </a>
+      </div>
     </section>
   );
 }

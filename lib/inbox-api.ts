@@ -408,17 +408,61 @@ export interface BillingSnapshot {
   status: string;
   memberCount: number;
   pendingInvites: number;
+  seatsUsed: number;
   seatsRemaining: number;
   entitled: boolean;
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: string | null;
+  pendingPlan: string | null;
+  pendingMaxUsers: number | null;
+  hasStripeCustomer: boolean;
+  stripeLinked: boolean;
+  seatLimitHoldReason: string | null;
   planLimits: Record<string, number>;
+}
+
+export interface BillingCatalog {
+  currency: string;
+  plans: Array<{
+    id: string;
+    name: string;
+    maxUsers: number;
+    priceCents: number | null;
+    public: boolean;
+    contact: boolean;
+  }>;
 }
 
 export const fetchBilling = () => api<BillingSnapshot>('/billing/subscription');
 
+export const fetchBillingCatalog = () => api<BillingCatalog>('/billing/catalog');
+
 export const openBillingPortal = () =>
   api<{ url: string }>('/billing/portal-session', { method: 'POST' });
+
+export const changeBillingPlan = (plan: string) =>
+  api<BillingSnapshot & { checkoutUrl?: string }>('/billing/upgrade', {
+    method: 'POST',
+    body: JSON.stringify({ plan }),
+  });
+
+export const createCheckoutSession = (input: {
+  email: string;
+  password: string;
+  name?: string;
+  tenantName: string;
+  tenantSlug: string;
+  plan: string;
+}) =>
+  api<{ checkoutUrl: string }>('/billing/checkout-session', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+
+export const fetchCheckoutSuccess = (sessionId: string) =>
+  api<{ email: string; tenantSlug: string; plan: string }>(
+    `/billing/checkout-success?session_id=${encodeURIComponent(sessionId)}`,
+  );
 
 export interface ConsentRow {
   id: string;

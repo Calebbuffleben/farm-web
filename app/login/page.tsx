@@ -121,7 +121,10 @@ export default function LoginPage() {
             </button>
           </form>
           <p className="mt-8 text-center text-xs text-faint">
-            Ambiente protegido e isolado para sua revenda.
+            Ambiente protegido e isolado para sua revenda.{' '}
+            <a href="/pricing" className="text-accent">
+              Ver planos
+            </a>
           </p>
         </div>
       </section>
