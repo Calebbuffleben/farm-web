@@ -46,8 +46,8 @@ export default function LoginPage() {
         <div className="relative z-10 flex items-center gap-3">
           <BrandMark inverted className="size-11" />
           <div>
-            <div className="font-display text-[28px] leading-none tracking-[-0.04em]">Farm</div>
-            <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/55">Intelligence</div>
+            <div className="font-display text-[28px] leading-none tracking-[-0.04em]">Flux</div>
+            <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/55">Inteligência comercial</div>
           </div>
         </div>
         <div className="relative z-10 max-w-xl">

@@ -844,7 +844,7 @@ function VoiceNumbersTable({
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
         <input
           className="input"
-          placeholder="Número Farm E.164"
+          placeholder="Número Flux E.164"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
         />
