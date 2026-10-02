@@ -28,12 +28,13 @@ import {
   Segmented,
   STAGE_LABEL,
   StageChip,
-  Stat,
   TempBar,
   TempDot,
 } from '@/components/ui';
 import { DealDrawer } from './deal-drawer';
 import { FactDrawer } from './fact-drawer';
+import { OutcomePanel } from './outcome';
+import { PortfolioPanel } from './portfolio';
 import { Signals } from './signals';
 
 const REASON_LABEL: Record<AttentionReason, string> = {
@@ -128,6 +129,7 @@ export default function DashboardPage() {
               }}
             />
           </div>
+          <OutcomePanel home={home} onOpenDeal={setDealId} onChanged={refresh} />
           <Today home={home} onOpenDeal={setDealId} />
           <Radar
             rows={home.radar}
@@ -137,6 +139,7 @@ export default function DashboardPage() {
             }
           />
           <PipelineSection home={home} onOpenDeal={setDealId} />
+          <PortfolioPanel home={home} onOpenFact={openFact} />
           <Signals home={home} onOpenFact={openFact} />
           {home.unknownPending > 0 && (
             <p className="text-sm">
@@ -180,22 +183,10 @@ function Today({
   return (
     <section className="reveal-3 reveal">
       <SectionHeader
-        title="O que pede atenção"
-        subtitle={`${s.deals} negócio${s.deals === 1 ? '' : 's'} em andamento · sinais dos últimos ${home.window.days} dias`}
+        title="O que pede atenção do time"
+        subtitle={`${s.deals} negócio${s.deals === 1 ? '' : 's'} em andamento · ${s.hot} quente${s.hot === 1 ? '' : 's'} · ${s.cooling} esfriando · ${s.unanswered} sem resposta · ${s.overdueFollowups} follow-up${s.overdueFollowups === 1 ? '' : 's'} vencido${s.overdueFollowups === 1 ? '' : 's'}`}
       />
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Quentes" value={s.hot} tone="hot" hint="intenção ou urgência alta, contato ≤ 3 d" />
-        <Stat
-          label="Esfriando"
-          value={s.cooling}
-          tone="cooling"
-          hint={`${s.unanswered} produtor${s.unanswered === 1 ? '' : 'es'} sem resposta > 48 h`}
-        />
-        <Stat label="Objeções e riscos abertos" value={s.complaints} tone="danger" />
-        <Stat label="Follow-ups vencidos" value={s.overdueFollowups} tone="cooling" />
-      </div>
-
-      <div className="mt-5">
+      <div>
         <div className="mb-2 flex items-center justify-between">
           <h3 className="text-xs font-bold uppercase tracking-[0.16em] text-copper">Fila de prioridades</h3>
           {home.attention.length > 0 && <span className="text-xs text-faint">{home.attention.length} para revisar</span>}

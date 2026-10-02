@@ -199,6 +199,136 @@ export interface DashboardHome {
     competitor: { count: number; items: FactCard[] };
     rtvHelp: { count: number; items: RtvHelpItem[] };
   };
+  outcome: DashboardOutcome;
+  portfolio: DashboardPortfolio;
+}
+
+export type InterventionTrigger =
+  | 'MANAGER_OWNER'
+  | 'ESCALATE'
+  | 'COOLING_CLOSE'
+  | 'PRICE_OVER_AUTHORITY'
+  | 'COMPETITOR_LATE';
+
+export type InterventionStatus = 'OPEN' | 'ACKNOWLEDGED' | 'EXECUTED' | 'DISMISSED' | 'EXPIRED';
+export type InterventionDecision = 'ASSUME' | 'DELEGATE' | 'DISMISS';
+export type InterventionMovement = 'FAVORABLE' | 'NONE' | 'UNFAVORABLE';
+
+export interface OutcomeCard {
+  id: string;
+  conversationId: string;
+  producerName: string | null;
+  farmNames: string[];
+  rtvUserId: string | null;
+  rtvName: string | null;
+  trigger: InterventionTrigger;
+  status: InterventionStatus;
+  decision: InterventionDecision | null;
+  stage: DealStage;
+  temperature: DealTemperature;
+  analysisQuality: 'COMPLETE' | 'PARTIAL' | 'STALE';
+  uncertain: boolean;
+  stale: boolean;
+  blockerSubtype: string | null;
+  recommendedAction: string;
+  recommendedOwner: 'RTV' | 'MANAGER';
+  dueAt: string | null;
+  managerGuidance: string | null;
+  moneyHints: string[];
+  movement: InterventionMovement | null;
+  movementNote: string | null;
+  executionObservedAt: string | null;
+  producerRepliedAt: string | null;
+  executionChannel: string | null;
+  createdAt: string;
+  canDelegate: boolean;
+}
+
+export interface OutcomeBucket {
+  count: number;
+  items: OutcomeCard[];
+}
+
+export interface DashboardOutcome {
+  confidence: { stale: number; partial: number; unknownPending: number };
+  scoreboard: {
+    asked: OutcomeBucket;
+    decided: OutcomeBucket;
+    observed: OutcomeBucket;
+    moved: OutcomeBucket;
+    expired: OutcomeBucket;
+    medianReactionHours: number | null;
+    partialInMoved: number;
+  };
+  queue: OutcomeCard[];
+  since: {
+    from: string;
+    newDecisions: number;
+    advanced: number;
+    cooled: number;
+    executed: number;
+    expired: number;
+    threats: number;
+  } | null;
+}
+
+export interface SilentFarmCard {
+  farmId: string;
+  farmName: string;
+  producerName: string;
+  region: string | null;
+  crop: string | null;
+  seasonLabel: string | null;
+  areaHa: number | null;
+  lastFactAt: string | null;
+  daysSilent: number | null;
+}
+
+export interface DashboardPortfolio {
+  silentFarms: SilentFarmCard[];
+  silentFarmsNote: string | null;
+  opportunities: {
+    count: number;
+    growing: number;
+    groups: {
+      product: string;
+      crop: string;
+      region: string;
+      current: number;
+      previous: number;
+      delta: number;
+      growing: boolean;
+      items: FactCard[];
+    }[];
+  };
+  competitive: {
+    count: number;
+    groups: {
+      product: string;
+      stage: DealStage | null;
+      weight: number;
+      count: number;
+      headlines: string[];
+      items: FactCard[];
+    }[];
+  };
+}
+
+export interface InterventionTimeline {
+  id: string;
+  conversationId: string;
+  movement: InterventionMovement | null;
+  movementNote: string | null;
+  executionObservedAt: string | null;
+  producerRepliedAt: string | null;
+  executionChannel: string | null;
+  timeline: {
+    at: string;
+    stage: DealStage;
+    temperature: DealTemperature;
+    blockerSubtype: string | null;
+    label: string;
+  }[];
 }
 
 export interface FactDetail extends Omit<FactCard, 'evidenceMessageId' | 'conversationId'> {
@@ -253,6 +383,15 @@ export const patchFactStatus = (id: string, status: 'OPEN' | 'RESOLVED' | 'DISMI
     method: 'PATCH',
     body: JSON.stringify({ status }),
   });
+
+export const fetchIntervention = (id: string) =>
+  api<InterventionTimeline>(`/dashboard/interventions/${encodeURIComponent(id)}`);
+
+export const decideIntervention = (id: string, decision: InterventionDecision) =>
+  api<{ id: string; status: InterventionStatus; decision: InterventionDecision }>(
+    `/dashboard/interventions/${encodeURIComponent(id)}`,
+    { method: 'PATCH', body: JSON.stringify({ decision }) },
+  );
 
 export const sendDiscountReply = (id: string, text: string) =>
   api<{ ok: true; sent: boolean; channel: 'WABA' | 'VOICE' | 'EMAIL' | 'WA_SESSION' }>(
