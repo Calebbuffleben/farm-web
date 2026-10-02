@@ -16,41 +16,6 @@ export function PortfolioPanel({
     <section className="reveal grid gap-10">
       <div>
         <SectionHeader
-          title="Carteira em silêncio"
-          subtitle="Fazendas importadas sem fato nesta janela, da maior área para a menor. Hectare prioriza; não é valor em R$."
-        />
-        {portfolio.silentFarmsNote && <p className="mb-3 text-sm text-muted">{portfolio.silentFarmsNote}</p>}
-        {portfolio.silentFarms.length === 0 ? (
-          <Empty
-            title="Nenhuma fazenda silenciosa neste recorte."
-            hint="Quando a carteira tiver cultura e área, quem ficou sem conversa aparece aqui."
-          />
-        ) : (
-          <ul className="grid gap-2">
-            {portfolio.silentFarms.map((farm) => (
-              <li key={`${farm.farmId}-${farm.crop ?? ''}-${farm.seasonLabel ?? ''}`} className="border border-border bg-surface px-4 py-3">
-                <div className="flex flex-wrap items-baseline gap-2">
-                  <span className="text-sm font-semibold">{farm.farmName}</span>
-                  <span className="text-xs text-muted">{farm.producerName}</span>
-                  {farm.areaHa != null && (
-                    <span className="ml-auto font-mono text-sm text-copper">
-                      {farm.areaHa.toLocaleString('pt-BR')} ha
-                    </span>
-                  )}
-                </div>
-                <p className="mt-1 text-xs text-faint">
-                  {[farm.crop, farm.seasonLabel, farm.region].filter(Boolean).join(' · ') || 'Sem cultura informada'}
-                  {' · '}
-                  {farm.daysSilent == null ? 'nunca conversou' : `${farm.daysSilent} dias sem fato`}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <div>
-        <SectionHeader
           title="Onde a demanda cresce"
           subtitle="Oportunidades por produto, cultura e região, contra a janela anterior."
         />

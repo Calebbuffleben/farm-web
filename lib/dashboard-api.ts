@@ -272,21 +272,7 @@ export interface DashboardOutcome {
   } | null;
 }
 
-export interface SilentFarmCard {
-  farmId: string;
-  farmName: string;
-  producerName: string;
-  region: string | null;
-  crop: string | null;
-  seasonLabel: string | null;
-  areaHa: number | null;
-  lastFactAt: string | null;
-  daysSilent: number | null;
-}
-
 export interface DashboardPortfolio {
-  silentFarms: SilentFarmCard[];
-  silentFarmsNote: string | null;
   opportunities: {
     count: number;
     growing: number;
