@@ -25,7 +25,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Flux — inteligência comercial do agro',
+  title: 'Veros — inteligência comercial do agro',
   description:
     'Conversas de WhatsApp da revenda viram fatos comerciais: objeções, riscos, oportunidades e follow-ups por fazenda.',
   manifest: '/manifest.webmanifest',

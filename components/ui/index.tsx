@@ -68,15 +68,16 @@ export function BrandMark({
   return (
     <span
       className={cx(
-        'relative grid shrink-0 place-items-center overflow-hidden',
-        inverted ? 'rounded-lg bg-white text-accent' : 'rounded-lg bg-accent text-accent-ink',
+        'relative grid shrink-0 place-items-center',
+        inverted ? 'text-white' : 'text-accent',
         className,
       )}
     >
-      <svg viewBox="0 0 32 32" className="size-[68%]" fill="none" aria-hidden>
-        <path d="M7 24V9.5C7 8.12 8.12 7 9.5 7H23" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
-        <path d="M8 16h10" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
-        <path d="M18.5 5.5c0 3.3-1.8 5.5-5.5 5.5 0-3.4 1.9-5.5 5.5-5.5Z" fill="currentColor" />
+      <svg viewBox="0 0 32 32" className="size-full" aria-hidden>
+        <path
+          fill="currentColor"
+          d="M4.8 3.8h5L16 17.6 22.2 3.8H27.2L16 28.6 4.8 3.8z"
+        />
       </svg>
     </span>
   );

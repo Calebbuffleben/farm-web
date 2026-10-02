@@ -90,7 +90,7 @@ export default function PricingPage() {
         <Link href="/login" className="flex items-center gap-3">
           <BrandMark className="size-10" />
           <div>
-            <div className="font-display text-2xl leading-none tracking-[-0.04em]">Flux</div>
+            <div className="font-sans text-2xl font-semibold leading-none tracking-[-0.06em]">Veros</div>
             <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-faint">
               Planos
             </div>

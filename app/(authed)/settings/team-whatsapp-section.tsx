@@ -97,9 +97,9 @@ export function TeamWhatsappSection() {
             <li>Empresa com CNPJ + site HTTPS + Meta Business Manager verificado.</li>
             <li>Número do RTV na Cloud API (coexistence via Embedded Signup de um BSP, ou número
               dedicado): token permanente, phone_number_id e business_id.</li>
-            <li>No Flux: Desconectar o RTV aqui (a fila de relatório para sozinha).</li>
+            <li>No Veros: Desconectar o RTV aqui (a fila de relatório para sozinha).</li>
             <li>Na Evolution, a instância do RTV vira <code>WHATSAPP-BUSINESS</code> com essas
-              credenciais; webhook da Meta aponta para a Evolution. O Flux não muda: mesmo
+              credenciais; webhook da Meta aponta para a Evolution. O Veros não muda: mesmo
               webhook, mesmo envio, mesma conversa — a identidade é o número, não o motor.</li>
             <li>Runbook completo: <code>farm/planejamento-captura/05-migrar-oficial.md</code>.</li>
           </ol>

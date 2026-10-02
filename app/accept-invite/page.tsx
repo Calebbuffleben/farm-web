@@ -53,7 +53,7 @@ function AcceptInviteForm() {
       <section className="auth-visual">
         <div className="relative z-10 flex items-center gap-3">
           <BrandMark inverted className="size-11" />
-          <span className="font-display text-[28px] leading-none tracking-[-0.04em]">Flux</span>
+          <span className="font-sans text-[28px] font-semibold leading-none tracking-[-0.06em]">Veros</span>
         </div>
         <div className="relative z-10 max-w-xl">
           <p className="eyebrow mb-5 !text-white/70">Bem-vindo ao time</p>
@@ -61,7 +61,7 @@ function AcceptInviteForm() {
             Menos preenchimento. Mais tempo com o produtor.
           </h1>
           <p className="mt-7 max-w-md text-[17px] leading-relaxed text-white/70">
-            O Flux transforma suas conversas em contexto e próximos passos para toda a equipe.
+            O Veros transforma suas conversas em contexto e próximos passos para toda a equipe.
           </p>
         </div>
         <p className="relative z-10 font-mono text-[11px] uppercase tracking-[0.16em] text-white/40">

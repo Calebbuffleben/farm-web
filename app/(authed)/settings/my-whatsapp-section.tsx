@@ -92,7 +92,7 @@ export function MyWhatsappSection() {
 
   async function onLogout() {
     if (!state) return;
-    if (!window.confirm('Desconectar o WhatsApp do Flux? As conversas ficam guardadas.')) return;
+    if (!window.confirm('Desconectar o WhatsApp do Veros? As conversas ficam guardadas.')) return;
     setBusy(true);
     setError(null);
     try {
@@ -144,7 +144,7 @@ export function MyWhatsappSection() {
         <div>
           <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
             Suas conversas 1:1 aparecem no Inbox conforme chegam. Continue usando o WhatsApp
-            do celular normalmente — o Flux é só um aparelho conectado a mais.
+            do celular normalmente — o Veros é só um aparelho conectado a mais.
           </p>
           <button className="btn" onClick={() => void onLogout()} disabled={busy}>
             Desconectar
@@ -189,7 +189,7 @@ export function MyWhatsappSection() {
               />
               <span className="muted">
                 Entendo que esta conexão usa a API Web do WhatsApp (como o WhatsApp Web), está
-                sujeita às políticas da Meta e pode ser interrompida. O Flux limita envios
+                sujeita às políticas da Meta e pode ser interrompida. O Veros limita envios
                 automáticos para proteger meu número.
               </span>
             </label>

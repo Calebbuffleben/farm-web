@@ -62,9 +62,9 @@ function AuthedShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-dvh md:grid md:grid-cols-[272px_minmax(0,1fr)]">
       <aside className="app-rail fixed inset-y-0 left-0 z-40 hidden w-[272px] flex-col p-5 md:flex">
         <Link href={homeHref} className="flex items-center gap-3 px-1 py-1">
-          <BrandMark inverted />
+          <BrandMark />
           <div>
-            <div className="font-display text-[22px] font-semibold leading-none tracking-[-0.03em] text-text">Flux</div>
+            <div className="font-sans text-[22px] font-semibold leading-none tracking-[-0.06em] text-text">Veros</div>
             <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">
               Inteligência comercial
             </div>
@@ -127,7 +127,7 @@ function AuthedShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-40 flex h-[calc(4rem+env(safe-area-inset-top,0px))] items-center border-b border-border bg-bg/90 px-4 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md md:hidden">
         <Link href={homeHref} className="flex items-center gap-2.5">
           <BrandMark className="size-8" />
-          <span className="font-display text-lg tracking-tight">Flux</span>
+          <span className="font-sans text-lg font-semibold tracking-[-0.06em]">Veros</span>
         </Link>
         {me && <span className="ml-auto max-w-[45%] truncate text-xs text-muted">{me.tenant.name}</span>}
       </header>
