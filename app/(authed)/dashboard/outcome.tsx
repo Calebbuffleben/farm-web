@@ -129,7 +129,7 @@ export function OutcomePanel({
       <div className="mt-8">
         <SectionHeader
           title="Decisões do gerente"
-          subtitle="Só o que depende de você: assumir, delegar ao RTV ou não agir. O vendedor continua sem preencher nada."
+          subtitle="Só o que depende de você: assumir, delegar ao RTV ou não agir."
         />
         {outcome.queue.length === 0 ? (
           <Empty
